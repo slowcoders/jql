@@ -1,0 +1,14 @@
+.vscode
+jql-spring-lib/.gradle
+jql-spring-lib/build
+jql-spring-lib/bin
+jql-spring-lib/out
+sample-app+tutorial/bin
+sample-app+tutorial/build
+sample-app+tutorial/target
+sample-app+tutorial/.gradle
+sample-app+tutorial/src/main/resources/static/static
+sample-app+tutorial/out
+sample-app+tutorial/.idea
+sample-app+tutorial/db/data
+derby.log
