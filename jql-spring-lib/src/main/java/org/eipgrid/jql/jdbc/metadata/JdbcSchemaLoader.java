@@ -27,7 +27,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
     private HashMap<String, Class<?>> ormTypeMap;
 
     private final HashMap<Class<?>, QSchema> classToSchemaMap = new HashMap<>();
-    private final HashMap<String, QSchema> metadataMap = new HashMap<>();
+    private final HashMap<String, QSchema> schemaMap = new HashMap<>();
 
     private final EntityManager entityManager;
 
@@ -91,7 +91,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
 
     public QSchema loadSchema(String tableName) {
         initialize();
-        QSchema schema = metadataMap.get(tableName);
+        QSchema schema = schemaMap.get(tableName);
         if (schema == null) {
             Class<?> ormType = ormTypeMap.get(tableName);
             if (ormType == null) {
@@ -135,8 +135,8 @@ public class JdbcSchemaLoader extends SchemaLoader {
     private QSchema loadSchema(TablePath tablePath, Class<?> ormType0) {
 
         final Class<?> ormType = ormType0;
-        synchronized (metadataMap) {
-            QSchema schema = metadataMap.get(tablePath.getQualifiedName());
+        synchronized (schemaMap) {
+            QSchema schema = schemaMap.get(tablePath.getQualifiedName());
             if (schema == null) {
                 schema = jdbc.execute(new ConnectionCallback<QSchema>() {
                     @Override
@@ -153,10 +153,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
     private QSchema loadSchema(Connection conn, TablePath tablePath, Class<?> ormType) throws SQLException {
         String qname = tablePath.getQualifiedName();
         JdbcSchema schema = new JdbcSchema(JdbcSchemaLoader.this, qname, ormType);
-        metadataMap.put(qname, schema);
-        if (schema.isJPARequired()) {
-            classToSchemaMap.put(ormType, schema);
-        }
+
         int dot_p = qname.indexOf('.');
         ArrayList<String> primaryKeys = getPrimaryKeys(conn, tablePath);
         HashMap<String, ArrayList<String>> uniqueConstraints = getUniqueConstraints(conn, tablePath);
@@ -170,6 +167,10 @@ public class JdbcSchemaLoader extends SchemaLoader {
         ArrayList<QColumn> columns = getColumns(conn, tablePath, schema, primaryKeys);
         processForeignKeyConstraints(conn, schema, tablePath, columns);
         schema.init(columns, uniqueConstraints, ormType);
+        schemaMap.put(qname, schema);
+        if (schema.isJPARequired()) {
+            classToSchemaMap.put(ormType, schema);
+        }
         return schema;
     }
 
