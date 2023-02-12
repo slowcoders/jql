@@ -13,3 +13,4 @@ sample-app+tutorial/.idea
 sample-app+tutorial/db/data
 derby.log
 .idea
+sample-app+tutorial/src/main/resources/static
