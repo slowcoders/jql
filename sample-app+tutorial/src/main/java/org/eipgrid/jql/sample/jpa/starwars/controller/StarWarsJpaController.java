@@ -33,7 +33,7 @@ public class StarWarsJpaController extends JqlStorageController.CRUD implements 
 
     @GetMapping("/{dbType}/loadData")
     public void loadData(
-            @Schema(allowableValues = {"postgres", "mysql"})
+            @Schema(allowableValues = {"postgresql", "mysql"})
             @PathVariable String dbType) throws IOException {
         JqlStorage storage = getStorage();
         ClassPathResource resource = new ClassPathResource("db/" + dbType + "/starwars_jpa-data.sql");
