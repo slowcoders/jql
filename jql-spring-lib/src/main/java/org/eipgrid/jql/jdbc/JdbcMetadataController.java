@@ -8,6 +8,7 @@ import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.util.KVEntity;
+import org.eipgrid.jql.util.SourceWriter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -63,7 +64,14 @@ public abstract class JdbcMetadataController {
                              @PathVariable("table") String tableName,
                              @PathVariable("type") SchemaType type) throws Exception {
         if ("*".equals(tableName)) {
-            return jpaSchemas(namespace, type);
+            switch (type) {
+                case Javascript:
+                    return dumpJsonSchemas(namespace);
+                case SpringJPA:
+                    return dumpJpaSchemas(namespace);
+                default:
+                    return "";
+            }
         }
 
         QSchema schema = getSchema(namespace, tableName);
@@ -80,7 +88,9 @@ public abstract class JdbcMetadataController {
         }
         else {
             if (schema instanceof JdbcSchema) {
-                source = ((JdbcSchema)schema).dumpJPAEntitySchema();
+                SourceWriter sb = new SourceWriter('\"');
+                ((JdbcSchema)schema).dumpJPAEntitySchema(sb,true);
+                source = sb.toString();
             }
             else {
                 source = tableName + " is not a JdbcSchema";
@@ -89,22 +99,30 @@ public abstract class JdbcMetadataController {
         return source;
     }
 
-    private String jpaSchemas(@PathVariable("schema") String namespace,
-                             @PathVariable("type") SchemaType type) throws Exception {
-        StringBuilder sb = new StringBuilder();
+    private String dumpJpaSchemas(String namespace) throws Exception {
+        SourceWriter sb = new SourceWriter('\"');
+        JdbcSchema.dumpJPAHeader(sb, true);
+        sb.write("public interface " + namespace + " {\n\n");
+        sb.incTab();
         for (String tableName : storage.getTableNames(namespace)) {
             QSchema schema = getSchema(namespace, tableName);
-            if (type == SchemaType.Javascript) {
-                String source = JsUtil.createDDL(schema);
-                String join = JsUtil.createJoinJQL(schema);
-                sb.append(source).append("\n\n").append(join);
-            } else if (schema instanceof JdbcSchema) {
-                String source = ((JdbcSchema) schema).dumpJPAEntitySchema();
-                sb.append(source);
-            } else {
-                continue;
+            if (schema instanceof JdbcSchema) {
+                ((JdbcSchema) schema).dumpJPAEntitySchema(sb,false);
+                sb.write("\n\n");
             }
-            sb.append("\n\n//-------------------------------------------------//\n\n");
+        }
+        sb.decTab();
+        sb.writeln("}");
+        return sb.toString();
+    }
+    private String dumpJsonSchemas(String namespace) throws Exception {
+        SourceWriter sb = new SourceWriter('\'');
+        for (String tableName : storage.getTableNames(namespace)) {
+            QSchema schema = getSchema(namespace, tableName);
+            String source = JsUtil.createDDL(schema);
+            String join = JsUtil.createJoinJQL(schema);
+            sb.write(source).write("\n\n").write(join);
+            sb.write("\n\n");
         }
         return sb.toString();
     }
@@ -122,10 +140,10 @@ public abstract class JdbcMetadataController {
 
     @GetMapping("/")
     @ResponseBody
-    @Operation(summary = "DB schema 목록")
-    public String listSchemas() throws Exception {
+    @Operation(summary = "Namespace(schema or catalog) 목록")
+    public String listNamespaces() throws Exception {
         StringBuilder sb = new StringBuilder();
-        for (String tableName : storage.getDBSchemas()) {
+        for (String tableName : storage.getNamespaces()) {
             sb.append(tableName).append('\n');
         }
         return sb.toString();

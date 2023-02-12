@@ -1,32 +1,34 @@
 package org.eipgrid.jql.schema;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.lang.reflect.Field;
+import java.util.Collection;
 
 public abstract class QColumn {
     private final QSchema schema;
     private final String physicalName;
-    private QType columnType;
-
-    protected QColumn(QSchema schema, String physicalName, QType type) {
+    private final Class valueType;
+    protected QColumn(QSchema schema, String physicalName, Class valueType) {
         this.schema = schema;
         this.physicalName = physicalName;
-        this.columnType = type;
-    }
-
-    protected QColumn(QSchema schema, String physicalName, Class javaType) {
-        this(schema, physicalName, QType.of(javaType));
+        this.valueType = valueType;
     }
 
     public final QSchema getSchema() {
         return schema;
     }
 
-    public final QType getValueType() {
-        return columnType;
+    public final Class getValueType() {
+        return valueType;
     }
 
     public final String getPhysicalName() {
         return physicalName;
+    }
+
+    public boolean isJsonNode() {
+        return this.valueType == JsonNode.class;
     }
 
     public abstract String getJsonKey();

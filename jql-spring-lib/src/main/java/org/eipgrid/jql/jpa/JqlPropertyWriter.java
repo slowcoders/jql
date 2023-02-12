@@ -1,22 +1,13 @@
 package org.eipgrid.jql.jpa;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QResultMapping;
-import org.eipgrid.jql.schema.QType;
 
-import javax.persistence.Entity;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Stack;
 
 public class JqlPropertyWriter extends BeanPropertyWriter {
@@ -64,10 +55,8 @@ public class JqlPropertyWriter extends BeanPropertyWriter {
         } else {
             String pname = this.getName();
             QColumn column = mapping.getSchema().findColumn(pname);
-            boolean isRef = (column != null && column.getValueType() == QType.Json);
-            if (!isRef) {
-                isRef = mapping.getSchema().getEntityJoinBy(pname) != null;
-            }
+            boolean isRef = (column != null && column.isJsonNode()) ||
+                mapping.getSchema().getEntityJoinBy(pname) != null;
             if (isRef) {
                 QResultMapping child = mapping.getChildMapping(this.getName());
                 if (child != null) {

@@ -1,10 +1,10 @@
 package org.eipgrid.jql.jdbc.timescale;
 
+import org.eipgrid.jql.JqlStorage;
+import org.eipgrid.jql.jpa.JPARepositoryBase;
+import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.QType;
-import org.eipgrid.jql.jpa.JPARepositoryBase;
-import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.util.ClassUtils;
 
 import java.lang.reflect.Field;
@@ -59,7 +59,7 @@ public abstract class TSDBRepositoryBase<ENTITY, ID> extends JPARepositoryBase<E
             if (c != null) {
                 return c.value();
             }
-            if (col.getValueType() == QType.Float) {
+            if (JsType.of(col.getValueType()) == JsType.Float) {
                 return AggregateType.Mean;
             }
             return AggregateType.None;

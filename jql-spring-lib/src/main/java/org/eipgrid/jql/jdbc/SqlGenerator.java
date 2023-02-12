@@ -1,6 +1,7 @@
 package org.eipgrid.jql.jdbc;
 
 import org.eipgrid.jql.JqlQuery;
+import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.*;
 import org.eipgrid.jql.parser.Expression;
 import org.eipgrid.jql.parser.JqlFilter;
@@ -46,8 +47,8 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         else {
             sw.write('(');
             writeJsonPath(currentNode);
-            QType valueType = value == null ? null : QType.of(value.getClass());
-            if (valueType == QType.Text) {
+            JsType valueType = value == null ? null : JsType.of(value.getClass());
+            if (valueType == JsType.Text) {
                 sw.write('>');
                 valueType = null;
             }
@@ -74,8 +75,10 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         }
     }
 
-    private void writeTypeCast(QType vf) {
+    private void writeTypeCast(JsType vf) {
         switch (vf) {
+            case Boolean:
+                sw.write("::BOOLEAN");
             case Integer:
             case Float:
                 sw.write("::NUMERIC");
@@ -92,8 +95,8 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
             case Text:
                 sw.write("::TEXT");
                 break;
+            case Object:
             case Array:
-            case Reference:
                 sw.write("::JSONB");
                 break;
         }
@@ -343,7 +346,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         }
         sw.replaceTrailingComma("\n) VALUES (");
         for (QColumn column : schema.getWritableColumns()) {
-            sw.write(column.getValueType() == QType.Json ? "?::jsonb, " : "?,");
+            sw.write(column.isJsonNode() ? "?::jsonb, " : "?,");
         }
         sw.replaceTrailingComma(")");
         if (ignoreConflict) {

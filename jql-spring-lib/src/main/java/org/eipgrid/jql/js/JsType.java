@@ -1,93 +1,89 @@
-package org.eipgrid.jql.schema;
+package org.eipgrid.jql.js;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.eipgrid.jql.util.ClassUtils;
 
 import javax.persistence.Embeddable;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.MappedSuperclass;
-import java.lang.ref.Reference;
 import java.lang.reflect.Field;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
-import java.util.Collection;
 import java.util.Map;
 
-public enum QType {
-    Boolean(Boolean.class),
-    Integer(Integer.class),
-    Float(Float.class),
-    Text(String.class),
-    Date(java.sql.Date.class),
-    Time(java.sql.Time.class),
-    Timestamp(java.sql.Timestamp.class),
-    Json(Map.class),
-    Array(Collection.class),
-
-    Reference(java.lang.ref.Reference.class);
-
-    private final Class<?> javaType;
-
-    QType(Class<?> javaType) {
-        this.javaType = javaType;
-    }
+public enum JsType {
+    Boolean,
+    Integer,
+    Float,
+    Text,
+    Date,
+    Time,
+    Timestamp,
+    Object,
+    Array;
 
     public boolean isPrimitive() {
-        return this.ordinal() < Json.ordinal();
+        return this.ordinal() < Object.ordinal();
     }
 
-    public static QType of(Field f) {
+    public static JsType of(Field f) {
         Class javaType = f.getType();
         if (javaType.isEnum()) {
             Enumerated e = f.getAnnotation(Enumerated.class);
             if (e != null && e.value() == EnumType.STRING) {
-                return QType.Text;
+                return JsType.Text;
             }
             else {
-                return QType.Integer;
+                return JsType.Integer;
             }
         }
-        return QType.of(javaType);
+        return JsType.of(javaType);
     }
 
 
-    public static QType of(Class javaType) {
+    public static JsType of(Class javaType) {
         if (javaType.getAnnotation(MappedSuperclass.class) != null
                 ||  javaType.getAnnotation(Embeddable.class) != null) {
-            return QType.Reference;
+            return JsType.Object;
         }
         if (javaType == Object.class ||
+                JsonNode.class.isAssignableFrom(javaType) ||
                 Map.class.isAssignableFrom(javaType)) {
-            return QType.Json;
+            return JsType.Object;
         }
         if (java.util.Collection.class.isAssignableFrom(javaType)) {
-            return QType.Array;
+            return JsType.Array;
         }
         if (javaType == java.sql.Timestamp.class) {
-            return QType.Timestamp;
+            return JsType.Timestamp;
+        }
+        if (javaType == java.util.Date.class) {
+            return JsType.Timestamp;
+        }
+        if (javaType == OffsetDateTime.class) {
+            return JsType.Timestamp;
         }
         if (javaType == Instant.class || javaType == ZonedDateTime.class) {
-            return QType.Timestamp;
+            return JsType.Timestamp;
         }
 
         if (javaType == java.sql.Time.class) {
-            return QType.Time;
+            return JsType.Time;
         }
         if (javaType == java.sql.Date.class) {
-            return QType.Date;
+            return JsType.Date;
         }
 
         javaType = ClassUtils.getBoxedType(javaType);
         if (javaType == Boolean.class || Number.class.isAssignableFrom(javaType)) {
             if (javaType == Float.class || javaType == Double.class) {
-                return QType.Float;
+                return JsType.Float;
             }
-            return QType.Integer;
+            return JsType.Integer;
         }
-        return javaType == String.class ? QType.Text : QType.Reference;
+        return javaType == String.class ? JsType.Text : JsType.Object;
     }
 
-    public Class<?> toJavaClass() {
-        return javaType;
-    }
 }

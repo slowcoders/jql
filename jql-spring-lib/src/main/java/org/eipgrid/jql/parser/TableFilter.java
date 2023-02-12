@@ -1,10 +1,9 @@
 package org.eipgrid.jql.parser;
 
-import org.eipgrid.jql.schema.QResultMapping;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
+import org.eipgrid.jql.schema.QResultMapping;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.QType;
 
 import java.util.*;
 
@@ -125,7 +124,7 @@ class TableFilter extends EntityFilter implements QResultMapping {
         QColumn jsonColumn = null;
         if (join == null) {
             jsonColumn = schema.getColumn(key);
-            if (jsonColumn.getValueType() != QType.Json) return this;
+            if (!jsonColumn.isJsonNode()) return this;
         }
 
         EntityFilter subQuery = subFilters.get(key);

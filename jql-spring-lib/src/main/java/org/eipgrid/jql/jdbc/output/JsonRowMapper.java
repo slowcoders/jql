@@ -1,11 +1,11 @@
 package org.eipgrid.jql.jdbc.output;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eipgrid.jql.schema.QResultMapping;
 import org.eipgrid.jql.schema.QColumn;
+import org.eipgrid.jql.schema.QResultMapping;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.QType;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.support.JdbcUtils;
@@ -56,7 +56,7 @@ public class JsonRowMapper implements ResultSetExtractor<List<Map>> {
                 List<QColumn> pkColumns = mapping.getSchema().getPKColumns();
                 int pkIndex = idxColumn;
                 for (int pkCount = pkColumns.size(); --pkCount >= 0; pkIndex++) {
-                    Object value = getColumnValue(rs, pkIndex + 1, mappedColumns[pkIndex].column.getValueType());
+                    Object value = getColumnValue(rs, pkIndex + 1, mappedColumns[pkIndex].column);
                     mappedColumns[pkIndex].value = value;
                     if (value == null) {
                         if (isArray && pkIndex > 0) {
@@ -163,7 +163,7 @@ public class JsonRowMapper implements ResultSetExtractor<List<Map>> {
 
         for (; idxColumn < end; ) {
             MappedColumn mappedColumn = mappedColumns[idxColumn++];
-            Object value = getColumnValue(rs, idxColumn, mappedColumn.column.getValueType());
+            Object value = getColumnValue(rs, idxColumn, mappedColumn.column);
             mappedColumn.value = value;
             putValue(currEntity, mappedColumn, value);
         }
@@ -222,13 +222,13 @@ public class JsonRowMapper implements ResultSetExtractor<List<Map>> {
         return (CachedEntity)subEntity;
     }
 
-    protected Object getColumnValue(ResultSet rs, int index, QType columnType) throws SQLException {
+    protected Object getColumnValue(ResultSet rs, int index, QColumn column) throws SQLException {
         Object value;
-        if (columnType == QType.Json) {
+        if (column.isJsonNode()) {
             try {
                 value = rs.getString(index);
                 if (value != null) {
-                    value = objectMapper.readValue(value.toString(), HashMap.class);
+                    value = objectMapper.readValue(value.toString(), JsonNode.class);
                 }
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);

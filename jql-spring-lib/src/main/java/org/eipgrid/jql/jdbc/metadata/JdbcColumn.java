@@ -1,17 +1,16 @@
 package org.eipgrid.jql.jdbc.metadata;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.QType;
 import org.eipgrid.jql.util.ClassUtils;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Map;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE)
 public class JdbcColumn extends QColumn {
@@ -19,7 +18,7 @@ public class JdbcColumn extends QColumn {
     private final boolean isReadOnly;
     private final boolean isAutoIncrement;
     private final boolean isNullable;
-    private final boolean isPk;
+    private boolean isPk;
     private Field field;
 
     private String fieldName;
@@ -41,7 +40,7 @@ public class JdbcColumn extends QColumn {
         this.isAutoIncrement = md.isAutoIncrement(col);
         this.isReadOnly = md.isReadOnly(col) | this.isAutoIncrement;
         this.isNullable = md.isNullable(col) != ResultSetMetaData.columnNoNulls;
-        this.isPk = primaryKeys.contains(this.getPhysicalName());
+        this.isPk = primaryKeys.contains(this.getPhysicalName()) || (isAutoIncrement && primaryKeys.isEmpty());
 
         this.fkBinder = fkBinder;
         this.field = null;
@@ -50,27 +49,11 @@ public class JdbcColumn extends QColumn {
             throw new RuntimeException("!isWritable");
         }
         this.colTypeName = md.getColumnTypeName(col);
-        this.label = comment != null ? comment : md.getColumnLabel(col);
+        this.label = comment; // comment!= null ? comment : md.getColumnLabel(col);
         this.precision = md.getPrecision(col);
         this.scale = md.getScale(col);
         this.displaySize = md.getColumnDisplaySize(col);
     }
-
-//    public JdbcColumn(QSchema schema, Field f) {
-//        super(schema, resolveColumnName(schema, f), ClassUtils.getElementType(f), QType.of(f));
-//        super.setMappedField(f);
-////        this.fk = resolveForeignKey(f);
-//
-//        this.field = f;
-//
-//        GeneratedValue gv = f.getAnnotation(GeneratedValue.class);
-//        this.isAutoIncrement = gv != null && gv.strategy() == GenerationType.IDENTITY;
-//        this.isPk = JPAUtils.isIdField(f);
-//
-////        this.isNullable = resolveNullable(f);
-//        this.isReadOnly = gv != null;
-//        this.label = null;
-//    }
 
     public boolean isForeignKey() { return fkBinder != null; }
 
@@ -128,9 +111,11 @@ public class JdbcColumn extends QColumn {
             String token = QJoin.resolveJsonKey(col);
             sb.append(token).append('.');
         }
-        CharSequence rawFieldName = (col != this) ? sb.append(col.getPhysicalName()) : this.getPhysicalName();
-
-        String name = getSchema().getSchemaLoader().getNameConverter().toLogicalAttributeName(rawFieldName.toString());
+        String name = getSchema().getSchemaLoader().getNameConverter().toLogicalAttributeName(col.getPhysicalName());
+        if (this != col) {
+            sb.append(name);
+            name = sb.toString();
+        }
         return name;
     }
 
@@ -146,7 +131,7 @@ public class JdbcColumn extends QColumn {
             switch (colTypeName) {
                 case "json":
                 case "jsonb":
-                    return Map.class;
+                    return JsonNode.class;
                 default:
                     String javaClassName = md.getColumnClassName(col);
                     return ClassUtils.getBoxedType(Class.forName(javaClassName));
@@ -158,7 +143,11 @@ public class JdbcColumn extends QColumn {
     }
 
 
-    public String getStoredType() {
+    public String getColumnTypeName() {
         return colTypeName;
+    }
+
+    /*package*/ final void markPrimaryKey() {
+        this.isPk = true;
     }
 }

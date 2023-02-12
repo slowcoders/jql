@@ -139,15 +139,17 @@ public class QJoin {
             return fk.getJsonKey();
         }
 
-        String fk_name = fk.getPhysicalName();
         QColumn joinedPk = fk.getJoinedPrimaryColumn();
+        String fk_name = fk.getPhysicalName();
         String pk_name = joinedPk.getPhysicalName();
         String js_key;
         if (fk_name.endsWith("_" + pk_name)) {
-            js_key = CaseConverter.toCamelCase(fk_name.substring(0, fk_name.length() - pk_name.length() - 1), false);
+            // if (pilot_id -> character.id) { json_key = pilot }
+            js_key = fk_name.substring(0, fk_name.length() - pk_name.length() - 1);
         } else {
             js_key = joinedPk.getSchema().getSimpleTableName();
         }
+        js_key = CaseConverter.toCamelCase(js_key, false);
         return js_key;
     }
 

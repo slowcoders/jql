@@ -14,6 +14,8 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
     protected final QSchema schema;
     protected JqlParser jqlParser;
 
+    public static final Class<Map> RawEntityType = Map.class;
+
     protected JqlRepository(JqlStorage storage, QSchema schema) {
         this.storage = storage;
         this.schema = schema;
@@ -52,7 +54,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
 
     public List<ENTITY> find(JqlQuery query) { return find(query, getEntityType()); }
 
-    public List<Map<String, Object>> find_raw(JqlQuery query) { return (List)find(query, Map.class); }
+    public List<Map<String, Object>> find_raw(JqlQuery query) { return (List)find(query, RawEntityType); }
 
 
     public <T> T find(ID id, JqlSelect select, Class<T> entityType) {
@@ -64,7 +66,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
 
     public ENTITY find(ID id) { return find(id, null); }
 
-    public Map<String, Object> find_raw(ID id, JqlSelect select) { return find(id, select, Map.class); }
+    public Map<String, Object> find_raw(ID id, JqlSelect select) { return find(id, select, RawEntityType); }
 
     public Map<String, Object> find_raw(ID id) { return find_raw(id, null); }
 
@@ -80,7 +82,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
 
     public ENTITY get(ID id) { return get(id, null); }
 
-    public Map<String, Object> get_raw(ID id, JqlSelect select) { return get(id, select, Map.class); }
+    public Map<String, Object> get_raw(ID id, JqlSelect select) { return get(id, select, RawEntityType); }
     public Map<String, Object> get_raw(ID id) { return get_raw(id, null); }
 
 
@@ -94,7 +96,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
 
     public List<ENTITY> find(Collection<ID> idList) { return find(idList, null); }
 
-    public List<Map<String, Object>> find_raw(Collection<ID> idList, JqlSelect select) { return (List)find(idList, select, Map.class); }
+    public List<Map<String, Object>> find_raw(Collection<ID> idList, JqlSelect select) { return (List)find(idList, select, RawEntityType); }
 
     public List<Map<String, Object>> find_raw(Collection<ID> idList) { return (List)find(idList, null); }
 

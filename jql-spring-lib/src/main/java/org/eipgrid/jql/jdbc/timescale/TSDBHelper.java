@@ -1,8 +1,8 @@
 package org.eipgrid.jql.jdbc.timescale;
 
+import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.QType;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.util.SourceWriter;
@@ -38,7 +38,7 @@ public abstract class TSDBHelper {
 
     private QColumn resolveTimeKeyColumn() {
         for (QColumn column : this.schema.getPKColumns()) {
-            if (column.getValueType() == QType.Timestamp) {
+            if (JsType.of(column.getValueType()) == JsType.Timestamp) {
                 return column;
             }
         }

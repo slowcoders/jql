@@ -1,6 +1,7 @@
 package org.eipgrid.jql.schema;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import org.eipgrid.jql.JqlRepository;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -25,7 +26,7 @@ public abstract class QSchema {
         this.tableName = tableName;
         this.schemaLoader = schemaLoader;
         this.entityType = entityType;
-        this.isJPASchema = !Map.class.isAssignableFrom(entityType);
+        this.isJPASchema = !JqlRepository.RawEntityType.isAssignableFrom(entityType);
     }
 
     public final SchemaLoader getSchemaLoader() {
@@ -108,11 +109,11 @@ public abstract class QSchema {
             }
 
             if (!ci.isForeignKey()) {
-                if (ci.getValueType().isPrimitive()) {
-                    primitiveColumns.add(ci);
+                if (ci.isJsonNode()) {
+                    objectColumns.add(ci);
                 }
                 else {
-                    objectColumns.add(ci);
+                    primitiveColumns.add(ci);
                 }
                 if (!ci.isReadOnly()) {
                     writableColumns.add(ci);
@@ -128,8 +129,13 @@ public abstract class QSchema {
         this.initJsonKeys(ormType);
         if (pkColumns.size() == 0) {
             pkColumns = this.allColumns;
+            markAllColumnsToPK(pkColumns);
         }
         this.pkColumns = Collections.unmodifiableList(pkColumns);
+    }
+
+    protected void markAllColumnsToPK(List<QColumn> pkColumns) {
+        throw new RuntimeException("not implemented");
     }
 
     protected void mapColumn(QColumn column, Field f) {

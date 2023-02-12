@@ -1,5 +1,6 @@
 package org.eipgrid.jql.jdbc.metadata;
 
+import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.jdbc.SqlGenerator;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
@@ -37,7 +38,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         Properties dbProperties = jdbc.execute(new ConnectionCallback<Properties>() {
             @Override
             public Properties doInConnection(Connection conn) throws SQLException, DataAccessException {
-                dbType = conn.getMetaData().getDatabaseProductName();
+                dbType = conn.getMetaData().getDatabaseProductName().toLowerCase();
                 String schema = conn.getSchema();
                 schemaSupported = schema != null;
                 if (schemaSupported) {
@@ -94,7 +95,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         if (schema == null) {
             Class<?> ormType = ormTypeMap.get(tableName);
             if (ormType == null) {
-                ormType = Map.class;
+                ormType = JqlRepository.RawEntityType;
             }
             TablePath tablePath = qualifiedNameToTablePath(tableName);
             schema = loadSchema(tablePath, ormType);
@@ -191,7 +192,12 @@ public class JdbcSchemaLoader extends SchemaLoader {
     }
 
     private static class JoinMap extends HashMap<String, QJoin> {
-        void add(QJoin join) {
+
+        public void add(JdbcSchema schema, List<QColumn> fkColumns, QJoin associateJoin) {
+            QJoin join = new QJoin(schema, fkColumns, associateJoin);
+            if (join.getJsonKey().equals("cbsw_comtype")) {
+                join = new QJoin(schema, fkColumns, associateJoin);
+            }
             QJoin old = super.get(join.getJsonKey());
             if (old != null) {
                 join.resolveNameConflict(old);
@@ -200,23 +206,23 @@ public class JdbcSchemaLoader extends SchemaLoader {
             assert(old == null);
         }
     }
-    private HashMap<String, QJoin> createJoinMap(JdbcSchema schema, EntityJoinHelper mappedJoins) {
+    private HashMap<String, QJoin> createJoinMap(JdbcSchema baseSchema, EntityJoinHelper mappedJoins) {
         JoinMap joinMap = new JoinMap();
-        for (List<QColumn> fkColumns : schema.getForeignKeyConstraints().values()) {
-            QJoin fkJoin = new QJoin(schema, fkColumns);
-            joinMap.add(fkJoin);
+        for (List<QColumn> fkColumns : baseSchema.getForeignKeyConstraints().values()) {
+            joinMap.add(baseSchema, fkColumns, null);
         }
         for (QJoin fkJoin : mappedJoins.values()) {
             List<QColumn> fkColumns = fkJoin.getForeignKeyColumns();
-            QJoin exJoin = new QJoin(schema, fkColumns);
-            joinMap.add(exJoin);
+            joinMap.add(baseSchema, fkColumns, null);
+
+            if (!fkColumns.get(0).getSchema().hasOnlyForeignKeys()) continue;
+
             JdbcSchema exSchema = (JdbcSchema) fkJoin.getBaseSchema();
             Collection<String> fkConstraints = exSchema.getForeignKeyConstraints().keySet();
             for (String fkConstraint : fkConstraints) {
                 QJoin j2 = exSchema.getJoinByForeignKeyConstraints(fkConstraint);
-                if (j2 != fkJoin) {
-                    QJoin associative = new QJoin(schema, fkColumns, j2);
-                    joinMap.add(associative);
+                if (j2 != fkJoin) {// && linkedSchema != baseSchema) {
+                    joinMap.add(baseSchema, fkColumns, j2);
                 }
             }
         }
@@ -228,9 +234,6 @@ public class JdbcSchemaLoader extends SchemaLoader {
         ResultSet rs = md.getPrimaryKeys(tablePath.getCatalog(), tablePath.getSchema(), tablePath.getSimpleName());
         ArrayList<String> keys = new ArrayList<>();
         int next_key_seq = 1;
-        if (tablePath.getQualifiedName().endsWith("sbsw_sta")) {
-            System.out.print("");
-        }
         while (rs.next()) {
             String key = rs.getString("column_name");
             int seq = rs.getInt("key_seq");
@@ -243,38 +246,38 @@ public class JdbcSchemaLoader extends SchemaLoader {
         return keys;
     }
 
-    public List<String> getTableNames(String dbSchema) throws SQLException {
+    public List<String> getTableNames(String namespace) throws SQLException {
         List<String> tableNames = jdbc.execute(new ConnectionCallback<List<String>>() {
             @Override
             public List<String> doInConnection(Connection conn) throws SQLException, DataAccessException {
-                return getTableNames(conn, dbSchema);
+                return getTableNames(conn, namespace);
             }
         });
         return tableNames;
     }
 
-    public List<String> getDBSchemas() {
-        List<String> dbSchemas = jdbc.execute(new ConnectionCallback<List<String>>() {
+    public List<String> getNamespaces() {
+        List<String> namespaces = jdbc.execute(new ConnectionCallback<List<String>>() {
             @Override
             public List<String> doInConnection(Connection conn) throws SQLException, DataAccessException {
                 DatabaseMetaData md = conn.getMetaData();
-                ResultSet rs = md.getSchemas();
+                ResultSet rs = schemaSupported ? md.getSchemas() : md.getCatalogs();
                 ArrayList<String> names = new ArrayList<>();
                 while (rs.next()) {
-                    String name = rs.getString("TABLE_SCHEM");
+                    String name = rs.getString(schemaSupported ? "TABLE_SCHEM": "TABLE_CAT");
                     names.add(name);
                 }
                 return names;
             }
         });
-        return dbSchemas;
+        return namespaces;
     }
 
 
-    private ArrayList<String> getTableNames(Connection conn, String schema) throws SQLException {
+    private ArrayList<String> getTableNames(Connection conn, String namespace) throws SQLException {
         DatabaseMetaData md = conn.getMetaData();
         String[] types = {"TABLE"};
-        ResultSet rs = md.getTables(null, schema, "%", types);
+        ResultSet rs = md.getTables(namespace, namespace, "%", types);
         ArrayList<String> names = new ArrayList<>();
         while (rs.next()) {
             String name = rs.getString("TABLE_NAME");
@@ -288,9 +291,6 @@ public class JdbcSchemaLoader extends SchemaLoader {
 
         DatabaseMetaData md = conn.getMetaData();
         ResultSet rs = md.getIndexInfo(tablePath.getCatalog(), tablePath.getSchema(), tablePath.getSimpleName(), true, false);
-        if (tablePath.getSimpleName().contains("episode")) {
-            System.out.println("");
-        }
         while (rs.next()) {
             String table_schem = rs.getString("table_schem");
             String table_name = rs.getString("table_name");
@@ -352,6 +352,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
             assert(fkJoin != null);
             joins.put(fkSchema, fkJoin);
         }
+        joins.validate();
         return joins;
     }
 
@@ -373,21 +374,58 @@ public class JdbcSchemaLoader extends SchemaLoader {
         return columns;
     }
 
-    private Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
-        if (true) return Collections.emptyMap();
-        String sql = "SELECT c.column_name, pgd.description\n" +
-                "FROM information_schema.columns c\n" +
-                "    inner join pg_catalog.pg_statio_all_tables as st on (c.table_name = st.relname)\n" +
-                "    inner join pg_catalog.pg_description pgd on (pgd.objoid=st.relid and\n" +
-                "          pgd.objsubid=c.ordinal_position)\n" +
-                "where c.table_schema = '" + tablePath.getSchema() + "' and c.table_name = '" + tablePath.getSimpleName() + "';\n";
+    public String getTableComment(String tableName) {
+        TablePath tablePath = qualifiedNameToTablePath(tableName);
+        String comment = null;
+        if ("postgresql".equals(dbType)) {
+        }
+        else if ("mariadb".equals(dbType) || "mysql".equals(dbType)) {
+            String sql = "SELECT table_name, table_comment\n" +
+                    "FROM information_schema.tables\n" +
+                    "WHERE table_schema = '" + tablePath.getCatalog() + "' and table_name = '" + tablePath.getSimpleName() + "'";
 
+            List<Map<String, Object>> rs = jdbc.queryForList(sql);
+            for (Map<String, Object> row : rs) {
+                comment = (String) row.get("table_comment");
+                if (comment != null) {
+                    comment = comment.trim();
+                }
+            }
+        }
+        return comment;
+    }
+
+
+    private Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
         HashMap<String, String> comments = new HashMap<>();
-        ResultSet rs = conn.createStatement().executeQuery(sql);
-        while (rs.next()) {
-            String columnName = rs.getString("column_name");
-            String comment = rs.getString("description");
-            comments.put(columnName, comment);
+        if ("postgresql".equals(dbType)) {
+            String sql = "SELECT c.column_name, pgd.description\n" +
+                    "FROM information_schema.columns c\n" +
+                    "    inner join pg_catalog.pg_statio_all_tables as st on (c.table_name = st.relname)\n" +
+                    "    inner join pg_catalog.pg_description pgd on (pgd.objoid=st.relid and\n" +
+                    "          pgd.objsubid=c.ordinal_position)\n" +
+                    "where c.table_schema = '" + tablePath.getSchema() + "' and c.table_name = '" + tablePath.getSimpleName() + "';\n";
+
+            ResultSet rs = conn.createStatement().executeQuery(sql);
+            while (rs.next()) {
+                String columnName = rs.getString("column_name");
+                String comment = rs.getString("description");
+                comments.put(columnName, comment);
+            }
+        }
+        else if ("mariadb".equals(dbType) || "mysql".equals(dbType)) {
+            String sql = "SELECT table_name, column_name, column_comment\n" +
+                    "FROM information_schema.columns\n" +
+                    "WHERE table_schema = '" + tablePath.getCatalog() + "' and table_name = '" + tablePath.getSimpleName() + "'";
+
+            ResultSet rs = conn.createStatement().executeQuery(sql);
+            while (rs.next()) {
+                String comment = rs.getString("column_comment");
+                if (comment != null && comment.trim().length() > 0) {
+                    String columnName = rs.getString("column_name");
+                    comments.put(columnName, comment);
+                }
+            }
         }
         return comments;
     }

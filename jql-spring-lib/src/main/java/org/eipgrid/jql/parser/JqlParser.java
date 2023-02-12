@@ -3,17 +3,15 @@ package org.eipgrid.jql.parser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.QType;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
 
 public class JqlParser {
 
-//    private final ConversionService conversionService;
     private final ObjectMapper om;
 
     public JqlParser(ObjectMapper om) {
-//        this.conversionService = conversionService;
         this.om = om;
     }
 
@@ -98,7 +96,7 @@ public class JqlParser {
             QSchema schema = subFilter.getSchema();
             if (schema != null) {
                 column = schema.getColumn(columnName);
-                Class<?> fieldType = column.getValueType().toJavaClass();
+                Class<?> fieldType = column.getValueType();
                 Class<?> accessType = op.getAccessType(value, fieldType);
                 if (value != null) {
                     value = om.convertValue(value, accessType);
@@ -106,7 +104,7 @@ public class JqlParser {
                 }
             }
             else {
-                column = new JsonColumn(columnName, value == null ? QType.Text : QType.of(value.getClass()));
+                column = new JsonColumn(columnName, value == null ? String.class : value.getClass());
             }
             Expression cond = op.createPredicate(column, value);
             targetPredicates.add(cond);

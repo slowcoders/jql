@@ -55,8 +55,8 @@ public class JdbcStorage extends JqlStorage {
         return jdbcSchemaLoader.getTableNames(dbSchema);
     }
 
-    public List<String> getDBSchemas() {
-        return jdbcSchemaLoader.getDBSchemas();
+    public List<String> getNamespaces() {
+        return jdbcSchemaLoader.getNamespaces();
     }
 
     public QueryGenerator createQueryGenerator(boolean isNativeQuery) {
