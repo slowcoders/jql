@@ -12,3 +12,4 @@ sample-app+tutorial/out
 sample-app+tutorial/.idea
 sample-app+tutorial/db/data
 derby.log
+.idea
