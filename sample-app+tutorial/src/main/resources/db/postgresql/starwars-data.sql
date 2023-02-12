@@ -1,5 +1,5 @@
-INSERT INTO starwars.episode (title) values
-('NEWHOPE'), ('EMPIRE'), ('JEDI')
+INSERT INTO starwars.episode (title, published) values
+('NEWHOPE', '2022-12-10T00:00:00'), ('EMPIRE', '2021-12-10T00:00:00'), ('JEDI', '2020-12-10T00:00:00')
 on conflict DO NOTHING;
 
 
