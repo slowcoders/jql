@@ -23,8 +23,13 @@
            node-version: 18
 
        - name: Build and run application
-         run: sh build_and_run_tutorial.sh
+         working-directory: sample-app+tutorial
+         run: | 
+          sh db/start_postgres.sh
+          ./gradlew bootRun --console=plain
 
        - name: Run jest integration tests
          working-directory: sample-app+tutorial/tutorial
-         run: npm run test
+         run: |
+          npm install
+          npm run test
