@@ -449,7 +449,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         simple_name = CaseConverter.camelCaseConverter.toPhysicalColumnName(simple_name).toLowerCase();
 
         if (namespace == null || namespace.length() == 0) {
-            namespace = getDefaultDBSchema();
+            namespace = getDefaultNamespace();
         }
         namespace = CaseConverter.camelCaseConverter.toPhysicalColumnName(namespace).toLowerCase();
         String qname = namespace + "." + simple_name;

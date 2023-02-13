@@ -3,21 +3,16 @@ package org.eipgrid.jql.schema;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
 
 public abstract class QColumn {
-    private final QSchema schema;
     private final String physicalName;
     private final Class valueType;
-    protected QColumn(QSchema schema, String physicalName, Class valueType) {
-        this.schema = schema;
+    protected QColumn(String physicalName, Class valueType) {
         this.physicalName = physicalName;
         this.valueType = valueType;
     }
 
-    public final QSchema getSchema() {
-        return schema;
-    }
+    public abstract QSchema getSchema();
 
     public final Class getValueType() {
         return valueType;

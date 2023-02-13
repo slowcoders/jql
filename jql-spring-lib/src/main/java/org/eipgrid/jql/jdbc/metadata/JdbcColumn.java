@@ -18,6 +18,7 @@ public class JdbcColumn extends QColumn {
     private final boolean isReadOnly;
     private final boolean isAutoIncrement;
     private final boolean isNullable;
+    private final JdbcSchema schema;
     private boolean isPk;
     private Field field;
 
@@ -34,8 +35,9 @@ public class JdbcColumn extends QColumn {
     private int scale;
     //*/
 
-    public JdbcColumn(QSchema schema, ResultSetMetaData md, int col, ColumnBinder fkBinder, String comment, ArrayList<String> primaryKeys) throws SQLException {
-        super(schema, md.getColumnName(col), resolveJavaType(md, col));
+    public JdbcColumn(JdbcSchema schema, ResultSetMetaData md, int col, ColumnBinder fkBinder, String comment, ArrayList<String> primaryKeys) throws SQLException {
+        super(md.getColumnName(col), resolveJavaType(md, col));
+        this.schema = schema;
 
         this.isAutoIncrement = md.isAutoIncrement(col);
         this.isReadOnly = md.isReadOnly(col) | this.isAutoIncrement;
@@ -54,6 +56,8 @@ public class JdbcColumn extends QColumn {
         this.scale = md.getScale(col);
         this.displaySize = md.getColumnDisplaySize(col);
     }
+
+    public JdbcSchema getSchema() { return schema; }
 
     public boolean isForeignKey() { return fkBinder != null; }
 
