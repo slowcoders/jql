@@ -98,8 +98,7 @@ public abstract class QSchema {
         List<QColumn> pkColumns = new ArrayList<>();
 
         for (QColumn ci: columns) {
-            String colName = ci.getPhysicalName().toLowerCase();
-            this.columnMap.put(colName, ci);
+            this.columnMap.put(ci.getPhysicalName().toLowerCase(), ci);
 
             if (ci.isPrimaryKey()) {
                 pkColumns.add(ci);

@@ -31,7 +31,8 @@ public class JdbcSchema extends QSchema {
         if (!JqlRepository.RawEntityType.isAssignableFrom(ormType)) {
             HashMap<String, Field> jpaColumns = new HashMap<>();
             for (Field f: ClassUtils.getInstanceFields(ormType, true)) {
-                jpaColumns.put(resolvePhysicalName(f), f);
+                String name = resolvePhysicalName(f);
+                jpaColumns.put(name.toLowerCase(), f);
             }
 
             for (int i = columns.size(); --i >= 0; ) {
