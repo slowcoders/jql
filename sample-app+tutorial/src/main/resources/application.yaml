@@ -58,6 +58,8 @@ spring:
       ddl-auto: update
       temp.use_jdbc_metadata_defaults: false
       jdbc.lab.non_contextual_creation: true
+      ## DB 칼럼명에 대소문자를 섞어 사용하는 경우에 필요.
+      naming.physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
     properties:
       ### @Cacheable 이 명시된 Entity 만 cache 되도록 설정.
