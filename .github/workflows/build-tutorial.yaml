@@ -26,7 +26,9 @@
          working-directory: sample-app+tutorial
          run: | 
           sh db/start_postgres.sh
-          ./gradlew bootRun --console=plain
+          ./gradlew build
+          nohup java -jar build/libs/jql-sample-app.jar &
+          sleep 1
 
        - name: Run jest integration tests
          working-directory: sample-app+tutorial/tutorial
