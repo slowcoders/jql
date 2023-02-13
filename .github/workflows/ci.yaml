@@ -2,7 +2,7 @@
 
  on:
    push:
-     branches: [ "ci-jest" ]
+     branches: [ "main" ]
 
  jobs:
    build:
