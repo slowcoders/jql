@@ -117,13 +117,13 @@ public class JdbcSchema extends QSchema {
     }
 
     private void dumpColumnDefinition(QColumn col, SourceWriter sb) {
+        if (col.getJoinedPrimaryColumn() != null) return;
+
         if (col.getLabel() != null) {
             sb.write("/** ");
             sb.write(col.getLabel());
             sb.writeln(" */");
         }
-        if (col.getJoinedPrimaryColumn() != null) return;
-
         boolean isJsonObject = col.isJsonNode();
         if (true || !isJsonObject) {
             sb.write("@Getter");
@@ -183,6 +183,18 @@ public class JdbcSchema extends QSchema {
         QSchema mappedSchema = join.getTargetSchema();
         boolean isUniqueJoin = join.hasUniqueTarget();
         boolean isArrayJoin = isInverseJoin && !isUniqueJoin;
+
+        if (!isInverseJoin && join.getForeignKeyColumns().size() == 1) {
+            QColumn col = firstFk;
+            if (join.getAssociativeJoin() != null && join.getAssociativeJoin().getForeignKeyColumns().size() == 1) {
+                col = join.getAssociativeJoin().getForeignKeyColumns().get(0);
+            }
+            if (col.getLabel() != null) {
+                sb.write("/** ");
+                sb.write(col.getLabel());
+                sb.writeln(" */");
+            }
+        }
 
         sb.write("@Getter @Setter\n");
 
