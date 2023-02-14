@@ -64,9 +64,11 @@ public abstract class JqlStorage implements CaseConverter {
 
     public abstract JqlRepository getRepository(String tableName);
 
+    public abstract <T, ID> JPARepositoryBase<T, ID> getRepository(Class<T> entityType);
+
     public abstract QSchema loadSchema(String tableName);
 
-    public abstract QSchema loadSchema(Class ormType);
+    public abstract QSchema loadSchema(Class entityType);
 
     public String makeTablePath(String schema, String name) {
         name = schema + "." + name;

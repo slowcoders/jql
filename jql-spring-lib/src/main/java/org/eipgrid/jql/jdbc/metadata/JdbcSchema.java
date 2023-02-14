@@ -2,6 +2,7 @@ package org.eipgrid.jql.jdbc.metadata;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.eipgrid.jql.JqlRepository;
+import org.eipgrid.jql.jpa.JPAUtils;
 import org.eipgrid.jql.schema.*;
 import org.eipgrid.jql.util.CaseConverter;
 import org.eipgrid.jql.util.ClassUtils;
@@ -37,7 +38,7 @@ public class JdbcSchema extends QSchema {
 
             for (int i = columns.size(); --i >= 0; ) {
                 QColumn col = columns.get(i);
-                Field f = jpaColumns.get(col.getPhysicalName());
+                Field f = jpaColumns.get(col.getPhysicalName().toLowerCase());
                 if (f == null) {
                     columns.remove(i);
                     if (unresolvedJpaColumns == null) unresolvedJpaColumns = new ArrayList<>();

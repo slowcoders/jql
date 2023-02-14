@@ -1,5 +1,6 @@
 package org.eipgrid.jql.jdbc;
 
+import org.eipgrid.jql.jpa.JPARepositoryBase;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.schema.SchemaLoader;
 import org.eipgrid.jql.jdbc.metadata.JdbcSchemaLoader;
@@ -18,6 +19,7 @@ import java.util.List;
 public class JdbcStorage extends JqlStorage {
     JdbcSchemaLoader jdbcSchemaLoader;
     private HashMap<String, JqlRepository> repositories = new HashMap<>();
+    private HashMap<Class, JPARepositoryBase> jpaRepositories = new HashMap<>();
 
     public JdbcStorage(DataSource dataSource,
                        TransactionTemplate transactionTemplate,
@@ -32,13 +34,46 @@ public class JdbcStorage extends JqlStorage {
         return jdbcSchemaLoader;
     }
 
+    private JqlRepository createRepository(QSchema schema) {
+        JqlRepository repo;
+        synchronized (repositories) {
+            String tableName = schema.getTableName();
+            if (schema.isJPARequired()) {
+                Class<?> entityType = schema.getEntityType();
+                repo = new JPARepositoryBase(this, entityType);
+                jpaRepositories.put(entityType, (JPARepositoryBase)repo);
+            } else {
+                repo = new JDBCRepositoryBase(this, schema);
+            }
+            repositories.put(tableName, repo);
+        }
+        return repo;
+    }
+
     public JqlRepository getRepository(String tableName) {
         JqlRepository repo = repositories.get(tableName);
         if (repo == null) {
-            // TODO ormType
-            QSchema schema = jdbcSchemaLoader.loadSchema(tableName);
-            repo = new JDBCRepositoryBase(this, schema);
-            repositories.put(tableName, repo);
+            synchronized (repositories) {
+                repo = repositories.get(tableName);
+                if (repo == null) {
+                    QSchema schema = jdbcSchemaLoader.loadSchema(tableName);
+                    repo = createRepository(schema);
+                }
+            }
+        }
+        return repo;
+    }
+
+    public <T,ID> JPARepositoryBase<T,ID> getRepository(Class<T> entityType) {
+        JPARepositoryBase repo = jpaRepositories.get(entityType);
+        if (repo == null) {
+            synchronized (repositories) {
+                repo = jpaRepositories.get(entityType);
+                if (repo == null) {
+                    QSchema schema = jdbcSchemaLoader.loadSchema(entityType);
+                    repo = (JPARepositoryBase)createRepository(schema);
+                }
+            }
         }
         return repo;
     }

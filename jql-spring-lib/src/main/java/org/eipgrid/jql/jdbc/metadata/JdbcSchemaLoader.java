@@ -154,7 +154,6 @@ public class JdbcSchemaLoader extends SchemaLoader {
         String qname = tablePath.getQualifiedName();
         JdbcSchema schema = new JdbcSchema(JdbcSchemaLoader.this, qname, ormType);
 
-        int dot_p = qname.indexOf('.');
         ArrayList<String> primaryKeys = getPrimaryKeys(conn, tablePath);
         HashMap<String, ArrayList<String>> uniqueConstraints = getUniqueConstraints(conn, tablePath);
         if (primaryKeys.size() == 0) {

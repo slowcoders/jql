@@ -10,8 +10,7 @@ import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.*;
 
-@NoRepositoryBean
-public abstract class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID> { // extends JPAQueryBuilder<ENTITY, ID> implements JqlRepository<ID> {
+public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID> { 
 
     private final static HashMap<Class<?>, JPARepositoryBase<?,?>>jqlServices = new HashMap<>();
     private final HashMap<ID, Object> associatedCache = new HashMap<>();

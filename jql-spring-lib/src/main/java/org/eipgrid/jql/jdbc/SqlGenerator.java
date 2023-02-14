@@ -191,7 +191,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         JqlFilter where = query.getFilter();
         where.setSelectedProperties(query.getSelect().getPropertyNames());
 
-        String tableName = isNativeQuery ? where.getTableName() : where.getSchema().getEntityType().getSimpleName();
+        String tableName = isNativeQuery ? where.getTableName() : where.getSchema().getEntityType().getName();
         boolean need_complex_pagination = isNativeQuery && query.getLimit() > 0 && needDistinctPagination(where);
         if (need_complex_pagination) {
             sw.write("\nWITH _cte AS (\n"); // WITH _cte AS NOT MATERIALIZED
