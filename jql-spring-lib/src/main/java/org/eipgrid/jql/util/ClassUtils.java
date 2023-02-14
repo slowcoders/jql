@@ -1,13 +1,9 @@
 package org.eipgrid.jql.util;
 
-import javax.persistence.Column;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 
 public class ClassUtils {
     private static HashMap<Class<?>, Object[]> emptyArrays = new HashMap<>();
@@ -130,22 +126,20 @@ public class ClassUtils {
         return null;
     }
 
-    public static ArrayList<Field> getInstanceFields(Class entityType, boolean excludeJpaTransient) {
+    public static ArrayList<Field> getFields(Class entityType, int excludeModifier) {
         ArrayList<Field> fields = new ArrayList<>();
-        getColumnFields(fields, entityType, excludeJpaTransient);
+        getFields(fields, entityType, excludeModifier);
         return fields;
     }
 
-    private static void getColumnFields(ArrayList<Field> columns, Class entityType, boolean excludeJpaTransient) {
+    public static void getFields(List<Field> columns, Class entityType, int excludeModifier) {
         Class<?> superClass = entityType.getSuperclass();
         if (superClass != Object.class) {
-            getColumnFields(columns, superClass, excludeJpaTransient);
+            getFields(columns, superClass, excludeModifier);
         }
         for (Field f : entityType.getDeclaredFields()) {
-            if (excludeJpaTransient && f.getAnnotation(Transient.class) != null) continue;
-            if ((f.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC)) == 0) {
-                columns.add(f);
-            }
+            if ((f.getModifiers() & excludeModifier) != 0) continue;
+            columns.add(f);
         }
     }
 

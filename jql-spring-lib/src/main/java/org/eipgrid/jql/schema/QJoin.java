@@ -115,7 +115,7 @@ public class QJoin {
             Class<?> jpaType = baseSchema.getEntityType();
             Class<?> jpaClass = getTargetSchema().getEntityType();
             if (jpaType.getAnnotation(Entity.class) != null) {
-                for (Field f : ClassUtils.getInstanceFields(jpaType, true)) {
+                for (Field f : JPAUtils.getCacheableFields(jpaType)) {
                     Class<?> itemT = ClassUtils.getElementType(f);
                     if (jpaClass == itemT) {
                         // TODO MappedBy 검사 필요(?)

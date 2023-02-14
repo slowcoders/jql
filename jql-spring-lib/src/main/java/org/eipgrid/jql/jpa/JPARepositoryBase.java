@@ -33,7 +33,7 @@ public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID
     }
 
 
-    public ID insert(ENTITY entity) {
+    public ENTITY insert(ENTITY entity) {
         if (hasGeneratedId()) {
             ID id = getEntityId(entity);
             if (id != null) {
@@ -41,7 +41,7 @@ public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID
             }
         }
         ENTITY newEntity = insertOrUpdate(entity);
-        return getEntityId(entity);
+        return newEntity;
     }
 
     public ID getEntityId(ENTITY entity) {
@@ -148,11 +148,6 @@ public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID
     public void putAssociatedCache(ENTITY entity, Object value) {
         associatedCache.put(getEntityId(entity), value);
     }
-
-//    @Override
-//    public ID convertId(Object _id) {
-//        return conversionService.convert(_id, this.idType);
-//    }
 
 
     public static class Util {

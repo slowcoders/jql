@@ -28,7 +28,7 @@ public class CsvParser {
         List<CsvColumn> schema = caches.get(entityType);
         if (schema == null) {
             schema = new ArrayList<>();
-            List<Field> fields = ClassUtils.getInstanceFields(entityType, false);
+            List<Field> fields = ClassUtils.getFields(entityType, 0);
             for (Field f : fields) {
                 schema.add(new CsvColumn(f));
             }
