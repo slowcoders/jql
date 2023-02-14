@@ -8,6 +8,7 @@ import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.util.CaseConverter;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
@@ -18,6 +19,7 @@ import java.util.List;
 
 public class JdbcStorage extends JqlStorage {
     JdbcSchemaLoader jdbcSchemaLoader;
+    private final JdbcTemplate jdbc;
     private HashMap<String, JqlRepository> repositories = new HashMap<>();
     private HashMap<Class, JPARepositoryBase> jpaRepositories = new HashMap<>();
 
@@ -25,13 +27,22 @@ public class JdbcStorage extends JqlStorage {
                        TransactionTemplate transactionTemplate,
                        ConversionService conversionService,
                        EntityManager entityManager) throws Exception {
-        super(dataSource, transactionTemplate, conversionService,
+        super(transactionTemplate, conversionService,
                 entityManager);
+        this.jdbc = new JdbcTemplate(dataSource);
         jdbcSchemaLoader = new JdbcSchemaLoader(entityManager, dataSource, CaseConverter.defaultConverter);
     }
 
     public SchemaLoader getSchemaLoader() {
         return jdbcSchemaLoader;
+    }
+
+    public DataSource getDataSource() {
+        return this.jdbc.getDataSource();
+    }
+
+    public JdbcTemplate getJdbcTemplate() {
+        return jdbc;
     }
 
     private JqlRepository createRepository(QSchema schema) {

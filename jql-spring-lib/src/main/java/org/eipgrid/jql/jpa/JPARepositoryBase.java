@@ -3,7 +3,7 @@ package org.eipgrid.jql.jpa;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.jdbc.JDBCRepositoryBase;
 import org.eipgrid.jql.JqlStorage;
-import org.springframework.data.repository.NoRepositoryBean;
+import org.eipgrid.jql.jdbc.JdbcStorage;
 
 import javax.persistence.Cache;
 import javax.persistence.EntityManager;
@@ -13,9 +13,13 @@ import java.util.*;
 public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID> { 
 
     private final HashMap<ID, Object> associatedCache = new HashMap<>();
+    private static JqlStorage storageInstance;
 
-    public JPARepositoryBase(JqlStorage storage, Class<ENTITY> entityType) {
+    public JPARepositoryBase(JdbcStorage storage, Class<ENTITY> entityType) {
         super(storage, storage.loadSchema(entityType));
+        if (storageInstance == null) {
+            storageInstance = storage;
+        }
     }
 
     public ID insert(Map<String, Object> dataSet) throws IOException {
@@ -148,4 +152,9 @@ public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID
     }
 
 
+    public static class Util {
+        public static <T, ID> JPARepositoryBase<T, ID> findRepository(Class<T> entityType) {
+            return (JPARepositoryBase<T, ID>) storageInstance.getRepository(entityType);
+        }
+    }
 }

@@ -20,7 +20,7 @@ public abstract class JdbcMetadataController {
 
     private final JdbcStorage storage;
 
-    public JdbcMetadataController(JqlStorage storage) {
+    public JdbcMetadataController(JdbcStorage storage) {
         this.storage = (JdbcStorage) storage;
     }
 

@@ -18,14 +18,21 @@ import java.util.List;
 import java.util.Map;
 
 public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
+
+    protected final JdbcStorage storage;
     private final JdbcTemplate jdbc;
     private final IdListMapper<ID> idListMapper = new IdListMapper<>(this);
 
     private static final ArrayRowMapper arrayMapper = new ArrayRowMapper();
 
-    protected JDBCRepositoryBase(JqlStorage storage, QSchema schema) {
-        super(storage, schema);
+    protected JDBCRepositoryBase(JdbcStorage storage, QSchema schema) {
+        super(schema, storage.getObjectMapper());
+        this.storage = storage;
         this.jdbc = storage.getJdbcTemplate();
+    }
+
+    public final JdbcStorage getStorage() {
+        return storage;
     }
 
     //    @Override

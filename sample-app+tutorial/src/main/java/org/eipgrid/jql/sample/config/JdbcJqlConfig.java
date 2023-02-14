@@ -1,8 +1,7 @@
 package org.eipgrid.jql.sample.config;
 
-import org.eipgrid.jql.JqlStorage;
-import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.eipgrid.jql.config.DefaultJqlConfig;
+import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.ConversionService;
@@ -15,7 +14,7 @@ import javax.sql.DataSource;
 public class JdbcJqlConfig extends DefaultJqlConfig {
 
     @Bean
-    public JqlStorage jdbcStorage(DataSource dataSource, TransactionTemplate transactionTemplate,
+    public JdbcStorage jdbcStorage(DataSource dataSource, TransactionTemplate transactionTemplate,
                                   ConversionService conversionService,
                                   EntityManager entityManager) throws Exception {
         JdbcStorage storage = new JdbcStorage(dataSource, transactionTemplate,

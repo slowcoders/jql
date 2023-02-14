@@ -104,7 +104,7 @@ public class JsonRowMapper implements ResultSetExtractor<List<Map>> {
     }
 
     private void makeSubArray(QResultMapping mapping) {
-        JqlEntity base = makeBaseEntity(mapping);
+        JdbcEntity base = makeBaseEntity(mapping);
         String[] entityPath = mapping.getEntityMappingPath();
         String key = entityPath[entityPath.length - 1];
         if (base.get(key) == null) {
@@ -336,7 +336,7 @@ public class JsonRowMapper implements ResultSetExtractor<List<Map>> {
         }
     }
 
-    private static class CachedEntity extends JqlEntity {
+    private static class CachedEntity extends JdbcEntity {
         private static int g_sno;
         private final int id;
 

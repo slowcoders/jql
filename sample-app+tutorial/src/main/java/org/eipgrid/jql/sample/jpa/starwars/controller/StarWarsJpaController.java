@@ -6,6 +6,7 @@ import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.JqlStorageController;
+import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +36,7 @@ public class StarWarsJpaController extends JqlStorageController.CRUD implements 
     public void loadData(
             @Schema(allowableValues = {"postgresql", "mysql"})
             @PathVariable String dbType) throws IOException {
-        JqlStorage storage = getStorage();
+        JdbcStorage storage = (JdbcStorage) getStorage();
         ClassPathResource resource = new ClassPathResource("db/" + dbType + "/starwars_jpa-data.sql");
         BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()));
         StringBuilder sql = new StringBuilder();

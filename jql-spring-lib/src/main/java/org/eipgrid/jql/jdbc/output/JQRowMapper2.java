@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
+public class JQRowMapper2 implements ResultSetExtractor<List<JdbcEntity>> {
     private final List<QResultMapping> resultMappings;
     private MappedColumn[] mappedColumns;
 
@@ -24,9 +24,9 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
     }
 
     private static class CacheNode extends HashMap<CacheNode.Key, CacheNode> {
-        JqlEntity cachedEntity;
+        JdbcEntity cachedEntity;
 
-        public CacheNode(JqlEntity cachedEntity) {
+        public CacheNode(JdbcEntity cachedEntity) {
             this.cachedEntity = cachedEntity;
         }
 
@@ -53,18 +53,18 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
     }
 
     @Override
-    public List<JqlEntity> extractData(ResultSet rs) throws SQLException, DataAccessException {
+    public List<JdbcEntity> extractData(ResultSet rs) throws SQLException, DataAccessException {
 
         initMappedColumns(rs);
 
-        ArrayList<JqlEntity> results = new ArrayList<>();
+        ArrayList<JdbcEntity> results = new ArrayList<>();
         HashMap<CacheNode.Key, CacheNode> rootEntityCache = new HashMap<>();
         CacheNode.Key searchKey = new CacheNode.Key(null);
 
         while (rs.next()) {
             int idxColumn = 0;
             int columnCount = mappedColumns.length;
-            JqlEntity baseEntity = null;
+            JdbcEntity baseEntity = null;
             int lastMappingIndex = resultMappings.size() - 1;
 
             HashMap<CacheNode.Key, CacheNode> cacheNodes = rootEntityCache;
@@ -81,7 +81,7 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
                 CacheNode cacheNode = cacheNodes.get(searchKey);
                 boolean cacheFound = cacheNode != null;
                 if (cacheNode == null) {
-                    JqlEntity newEntity = readEntity(mapping, baseEntity, rs, idxColumn);
+                    JdbcEntity newEntity = readEntity(mapping, baseEntity, rs, idxColumn);
                     cacheNode = new CacheNode(newEntity);
                     cacheNodes.put(new CacheNode.Key(pk), cacheNode);
                     if (i == 0) {
@@ -98,10 +98,10 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
             }
 
             if (idxColumn == 0) {
-                baseEntity = new JqlEntity();
+                baseEntity = new JdbcEntity();
                 results.add(baseEntity);
             }
-            JqlEntity entity = baseEntity;
+            JdbcEntity entity = baseEntity;
             QResultMapping mapping = mappedColumns[0].mapping;
             for (; idxColumn < columnCount; ) {
                 MappedColumn mappedColumn = mappedColumns[idxColumn];
@@ -116,9 +116,9 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
         return results;
     }
 
-    private JqlEntity makeSubEntity(JqlEntity entity, QResultMapping mapping) {
+    private JdbcEntity makeSubEntity(JdbcEntity entity, QResultMapping mapping) {
         if (entity == null) {
-            return new JqlEntity();
+            return new JdbcEntity();
         }
         String[] entityPath = mapping.getEntityMappingPath();
         int idxLastPath = entityPath.length - 1;
@@ -129,8 +129,8 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
         return entity;
     }
 
-    private JqlEntity readEntity(QResultMapping mapping, JqlEntity baseEntity, ResultSet rs, int idxColumn) throws SQLException {
-        JqlEntity entity = makeSubEntity(baseEntity, mapping);
+    private JdbcEntity readEntity(QResultMapping mapping, JdbcEntity baseEntity, ResultSet rs, int idxColumn) throws SQLException {
+        JdbcEntity entity = makeSubEntity(baseEntity, mapping);
         for (int i = mapping.getSelectedColumns().size(); --i >= 0; ) {
             MappedColumn mc = mappedColumns[idxColumn];
             Object v = getColumnValue(rs, ++idxColumn);
@@ -150,10 +150,10 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
         return pks;
     }
 
-    private JqlEntity makeSubEntity(JqlEntity entity, String key, boolean isArray) {
+    private JdbcEntity makeSubEntity(JdbcEntity entity, String key, boolean isArray) {
         Object subEntity = entity.get(key);
         if (subEntity == null) {
-            subEntity = new JqlEntity();
+            subEntity = new JdbcEntity();
             if (isArray) {
                 ArrayList<Object> array = new ArrayList<>();
                 array.add(subEntity);
@@ -163,13 +163,13 @@ public class JQRowMapper2 implements ResultSetExtractor<List<JqlEntity>> {
             }
         } else if (isArray) {
             ArrayList<Object> array = (ArrayList<Object>) subEntity;
-            subEntity = new JqlEntity();
+            subEntity = new JdbcEntity();
             array.add(subEntity);
         } else if (subEntity instanceof ArrayList) {
-            ArrayList<JqlEntity> list = (ArrayList<JqlEntity>) subEntity;
+            ArrayList<JdbcEntity> list = (ArrayList<JdbcEntity>) subEntity;
             subEntity = list.get(list.size()-1);
         }
-        return (JqlEntity)subEntity;
+        return (JdbcEntity)subEntity;
     }
 
     protected Object getColumnValue(ResultSet rs, int index) throws SQLException {

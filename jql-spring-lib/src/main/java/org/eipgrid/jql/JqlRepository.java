@@ -1,5 +1,6 @@
 package org.eipgrid.jql;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.parser.JqlFilter;
 import org.eipgrid.jql.parser.JqlParser;
 import org.eipgrid.jql.schema.QSchema;
@@ -9,23 +10,18 @@ import java.util.*;
 
 public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
 
-    protected final JqlStorage storage;
-
     protected final QSchema schema;
     protected JqlParser jqlParser;
 
     public static final Class<Map> RawEntityType = Map.class;
 
-    protected JqlRepository(JqlStorage storage, QSchema schema) {
-        this.storage = storage;
+    protected JqlRepository(QSchema schema, ObjectMapper objectMapper) {
         this.schema = schema;
-        this.jqlParser = new JqlParser(storage.getObjectMapper());
+        this.jqlParser = new JqlParser(objectMapper);
     }
 
 
-    public final JqlStorage getStorage() {
-        return storage;
-    }
+    public abstract JqlStorage getStorage();
 
     public final String getTableName() {
         return schema.getTableName();

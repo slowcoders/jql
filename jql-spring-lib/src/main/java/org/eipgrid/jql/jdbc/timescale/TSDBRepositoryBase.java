@@ -1,6 +1,6 @@
 package org.eipgrid.jql.jdbc.timescale;
 
-import org.eipgrid.jql.JqlStorage;
+import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.eipgrid.jql.jpa.JPARepositoryBase;
 import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
@@ -15,7 +15,7 @@ public abstract class TSDBRepositoryBase<ENTITY, ID> extends JPARepositoryBase<E
 
     private final String timeKeyColumnName;
 
-    public TSDBRepositoryBase(JqlStorage storage, Class<ENTITY> entityType, Class<ID> idType, String timeKeyColumnName) {
+    public TSDBRepositoryBase(JdbcStorage storage, Class<ENTITY> entityType, Class<ID> idType, String timeKeyColumnName) {
         super(storage, entityType);
         this.timeKeyColumnName = timeKeyColumnName;
 

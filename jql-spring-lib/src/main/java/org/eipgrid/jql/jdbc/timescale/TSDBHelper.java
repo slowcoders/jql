@@ -1,5 +1,6 @@
 package org.eipgrid.jql.jdbc.timescale;
 
+import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
@@ -22,7 +23,7 @@ public abstract class TSDBHelper {
     private static final boolean USE_CONN = true;
 
     private final String tableName;
-    private final JqlStorage storage;
+    private final JdbcStorage storage;
     private final JdbcTemplate jdbc;
 
     private QColumn timeKeyColumn;
@@ -30,7 +31,7 @@ public abstract class TSDBHelper {
     private QSchema schema;
     private Connection conn;
 
-    public TSDBHelper(JqlStorage storage, String tableName) {
+    public TSDBHelper(JdbcStorage storage, String tableName) {
         this.jdbc = storage.getJdbcTemplate();
         this.storage = storage;
         this.tableName = tableName;

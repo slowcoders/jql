@@ -1,12 +1,13 @@
 package org.eipgrid.jql.jdbc.postgres;
 
 import lombok.SneakyThrows;
-import org.eipgrid.jql.schema.QColumn;
-import org.postgresql.jdbc.PgConnection;
+import org.eipgrid.jql.JqlStorage;
+import org.eipgrid.jql.jdbc.JdbcStorage;
+import org.eipgrid.jql.jpa.JPARepositoryBase;
 import org.eipgrid.jql.schema.AutoClearEntityCache;
 import org.eipgrid.jql.schema.AutoUpdateModifyTimestamp;
-import org.eipgrid.jql.JqlStorage;
-import org.eipgrid.jql.jpa.JPARepositoryBase;
+import org.eipgrid.jql.schema.QColumn;
+import org.postgresql.jdbc.PgConnection;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
@@ -17,12 +18,12 @@ import java.sql.Statement;
 import java.util.List;
 
 public class UpdateListener extends Thread {
-    private final JqlStorage storage;
+    private final JdbcStorage storage;
     private final JPARepositoryBase repository;
     private final PgConnection conn;
     private final ConnectionHolder connHolder;
 
-    public UpdateListener(JqlStorage storage, String event, JPARepositoryBase repository) throws SQLException {
+    public UpdateListener(JdbcStorage storage, String event, JPARepositoryBase repository) throws SQLException {
         this.storage = storage;
         this.conn = storage.getDataSource().getConnection().unwrap(PgConnection.class);
         this.connHolder = new ConnectionHolder(this.conn);
@@ -33,7 +34,7 @@ public class UpdateListener extends Thread {
         stmt.close();
     }
 
-    public static <ID, ENTITY> void initAutoUpdateTrigger(JqlStorage storage, JPARepositoryBase<ENTITY,ID> repository) {
+    public static <ID, ENTITY> void initAutoUpdateTrigger(JdbcStorage storage, JPARepositoryBase<ENTITY,ID> repository) {
         Class<?> entityType = repository.getEntityType();
         AutoUpdateModifyTimestamp autoUpdate = entityType.getAnnotation(AutoUpdateModifyTimestamp.class);
         AutoClearEntityCache autoClearCache = entityType.getAnnotation(AutoClearEntityCache.class);
