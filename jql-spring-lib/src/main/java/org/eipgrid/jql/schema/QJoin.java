@@ -1,5 +1,6 @@
 package org.eipgrid.jql.schema;
 
+import org.eipgrid.jql.jpa.JPAUtils;
 import org.eipgrid.jql.util.CaseConverter;
 import org.eipgrid.jql.util.ClassUtils;
 

@@ -29,6 +29,8 @@ public abstract class JqlStorage implements CaseConverter {
     private HashMap<String, JqlRepository> repositories = new HashMap<>();
     private HashMap<String, JPARepositoryBase> jpaRepositories = new HashMap<>();
 
+    private static JqlStorage firstStorage;
+
     public JqlStorage(DataSource dataSource,
                       TransactionTemplate transactionTemplate,
                       ConversionService conversionService,
@@ -41,6 +43,9 @@ public abstract class JqlStorage implements CaseConverter {
         this.entityManager = entityManager;
         String cname = (String) entityManager.getEntityManagerFactory().getProperties().get("hibernate.physical_naming_strategy");
         this.namingStrategy = ClassUtils.newInstanceOrNull(cname);
+        if (firstStorage == null) {
+            firstStorage = this;
+        }
         System.out.println(cname);
     }
 
@@ -93,4 +98,9 @@ public abstract class JqlStorage implements CaseConverter {
         return this.transactionTemplate;
     }
 
+    public static class Util {
+        public static <T, ID> JPARepositoryBase<T, ID> findRepository(Class<T> entityType) {
+            return (JPARepositoryBase<T, ID>) firstStorage.jpaRepositories.get(entityType);
+        }
+    }
 }

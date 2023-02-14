@@ -12,12 +12,10 @@ import java.util.*;
 
 public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID> { 
 
-    private final static HashMap<Class<?>, JPARepositoryBase<?,?>>jqlServices = new HashMap<>();
     private final HashMap<ID, Object> associatedCache = new HashMap<>();
 
     public JPARepositoryBase(JqlStorage storage, Class<ENTITY> entityType) {
         super(storage, storage.loadSchema(entityType));
-        jqlServices.put(this.getEntityType(), this);
     }
 
     public ID insert(Map<String, Object> dataSet) throws IOException {
@@ -150,9 +148,4 @@ public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID
     }
 
 
-    public static class Util {
-        public static <T> JPARepositoryBase<T, Object> findRepository(Class<T> entityType) {
-            return (JPARepositoryBase<T, Object>) JPARepositoryBase.jqlServices.get(entityType);
-        }
-    }
 }

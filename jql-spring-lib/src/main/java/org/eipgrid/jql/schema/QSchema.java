@@ -184,32 +184,6 @@ public abstract class QSchema {
     }
 
 
-    public String getPhysicalColumnName(String fieldName) {
-        return this.columnMap.get(fieldName).getPhysicalName();
-    }
-
-    public String getLogicalAttributeName(String columnName) {
-        return this.columnMap.get(columnName).getJsonKey();
-    }
-
-    public String[] getPhysicalColumnNames(String[] fieldNames) {
-        if (fieldNames == null || fieldNames.length == 0) return null;
-        String[] out = new String[fieldNames.length];
-        for (int i = 0; i < fieldNames.length; i ++) {
-            String key = fieldNames[i];
-            out[i] = getPhysicalColumnName(key);
-        }
-        return out;
-    }
-
-    public List<String> getPhysicalColumnNames(Iterable<String> fieldNames) {
-        ArrayList<String> out = new ArrayList<>();
-        for (String key : fieldNames) {
-            out.add(getPhysicalColumnName(key));
-        }
-        return out;
-    }
-
     public boolean isUniqueConstrainedColumnSet(List<QColumn> fkColumns) {
         return false;
     }

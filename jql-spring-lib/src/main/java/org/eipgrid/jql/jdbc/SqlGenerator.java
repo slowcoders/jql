@@ -318,8 +318,8 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         sw.writeln();
         sw.write(getCommand(SqlConverter.Command.Insert)).write(" INTO ").write(schema.getTableName()).writeln("(");
         sw.incTab();
-        for (String name : schema.getPhysicalColumnNames(keys)) {
-            sw.write(name);
+        for (String name : keys) {
+            sw.write(schema.getColumn(name).getPhysicalName());
             sw.write(", ");
         }
         sw.shrinkLength(2);
