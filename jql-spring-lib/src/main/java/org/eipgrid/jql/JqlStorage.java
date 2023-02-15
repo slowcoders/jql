@@ -15,39 +15,24 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
-public abstract class JqlStorage implements CaseConverter {
-    private final EntityManager entityManager;
+public abstract class JqlStorage {
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
-    private final PhysicalNamingStrategy namingStrategy;
-    private final ConversionService conversionService;
-
-    private HashMap<String, JqlRepository> repositories = new HashMap<>();
-    private HashMap<String, JPARepositoryBase> jpaRepositories = new HashMap<>();
-
     public JqlStorage(TransactionTemplate transactionTemplate,
-                      ConversionService conversionService,
-                      EntityManager entityManager) throws Exception {
-        this.objectMapper = new ObjectMapper();
+                      ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.transactionTemplate = transactionTemplate;
-        this.conversionService = conversionService;
-        this.entityManager = entityManager;
-        String cname = (String) entityManager.getEntityManagerFactory().getProperties().get("hibernate.physical_naming_strategy");
-        this.namingStrategy = ClassUtils.newInstanceOrNull(cname);
-        System.out.println(cname);
     }
 
-    public abstract QueryGenerator createQueryGenerator(boolean isNativeQuery);
 
-    public final QueryGenerator createQueryGenerator() { return createQueryGenerator(true); }
 
-    public EntityManager getEntityManager() { return entityManager; }
-
-    public ConversionService getConversionService() {
-        return this.conversionService;
+    public TransactionTemplate getTransactionTemplate() {
+        return this.transactionTemplate;
     }
 
     public ObjectMapper getObjectMapper() {
@@ -74,11 +59,6 @@ public abstract class JqlStorage implements CaseConverter {
 
     @Override
     public String toLogicalAttributeName(String columnName) {
-        throw new RuntimeException("not implemented");
-    }
-
-    public TransactionTemplate getTransactionTemplate() {
-        return this.transactionTemplate;
     }
 
 }

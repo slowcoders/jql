@@ -25,7 +25,7 @@ public class JdbcStorage extends JqlStorage {
 
     public JdbcStorage(DataSource dataSource,
                        TransactionTemplate transactionTemplate,
-                       ConversionService conversionService,
+                       ObjectMapper objectMapper,
                        EntityManager entityManager) throws Exception {
         super(transactionTemplate, conversionService,
                 entityManager);

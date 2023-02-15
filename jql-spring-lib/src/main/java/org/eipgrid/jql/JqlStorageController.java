@@ -2,6 +2,7 @@ package org.eipgrid.jql;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +11,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import javax.transaction.Transactional;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public interface JqlStorageController {
@@ -19,10 +21,12 @@ public interface JqlStorageController {
     class Search implements JqlStorageController {
         private final JqlStorage storage;
         private final String tableNamePrefix;
+        private final ConversionService conversionService;
 
-        public Search(JqlStorage storage, String tableNamePrefix) {
+        public Search(JqlStorage storage, String tableNamePrefix, ConversionService conversionService) {
             this.storage = storage;
-            this.tableNamePrefix = tableNamePrefix;
+            this.tableNamePrefix = tableNamePrefix == null ? "" : tableNamePrefix;
+            this.conversionService = conversionService;
         }
 
         public final JqlStorage getStorage() {
@@ -43,7 +47,8 @@ public interface JqlStorageController {
                           @RequestParam(value = "select", required = false) String select$) {
             JqlRepository repository = getRepository(table);
             JqlSelect select = JqlSelect.of(select$);
-            Object id = repository.convertId(id$);
+            Class idType = repository.getSchema().getIDType();
+            Object id = conversionService.convert(id$, idType);
             Object entity = repository.find(id, select);
             if (entity == null) {
                 throw new HttpServerErrorException("Entity(" + id$ + ") is not found", HttpStatus.NOT_FOUND, null, null, null, null);
@@ -144,8 +149,8 @@ public interface JqlStorageController {
     }
 
     class CRUD extends JqlStorageController.Search implements Insert, Update, Delete {
-        public CRUD(JqlStorage storage, String tableNamePrefix) {
-            super(storage, tableNamePrefix);
+        public CRUD(JqlStorage storage, String tableNamePrefix, ConversionService conversionService) {
+            super(storage, tableNamePrefix, conversionService);
         }
     }
 

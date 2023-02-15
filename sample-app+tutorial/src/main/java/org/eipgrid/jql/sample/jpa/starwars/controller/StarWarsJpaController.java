@@ -7,6 +7,7 @@ import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.JqlStorageController;
 import org.eipgrid.jql.jdbc.JdbcStorage;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +19,8 @@ import java.io.InputStreamReader;
 @RequestMapping("/api/jql/starwars_jpa")
 public class StarWarsJpaController extends JqlStorageController.CRUD implements JqlStorageController.ListAll {
 
-    public StarWarsJpaController(JqlStorage storage) {
-        super(storage, "starwars_jpa.");
+    public StarWarsJpaController(JqlStorage storage, ConversionService conversionService) {
+        super(storage, "starwars_jpa.", conversionService);
     }
 
     @Override

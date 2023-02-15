@@ -120,10 +120,10 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
          * 해당 ID 는 Jql 검색을 통해 얻은 Json Value 값이므로, ObjectMapper 를 통한 Parsing 또한 가능하나,
          * StorageController 와 TableController 동작 호환성을 위해 ConversionService 를 사용한다.
          */
-        ConversionService cvtService = storage.getConversionService();
+        ObjectMapper om = storage.getObjectMapper();
         List<QColumn> pkColumns = schema.getPKColumns();
         if (pkColumns.size() == 1) {
-            return (ID)cvtService.convert(v, pkColumns.get(0).getValueType());
+            return (ID)om.convertValue(v, pkColumns.get(0).getValueType());
         }
         String pks[] = ((String)v).split("|");
         if (pks.length != pkColumns.size()) {
@@ -131,7 +131,7 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         }
         Object ids[] = new Object[pks.length];
         for (int i = 0; i < pks.length; i++) {
-            ids[i] = cvtService.convert(pks[i], pkColumns.get(i).getValueType());
+            ids[i] = om.convertValue(pks[i], pkColumns.get(i).getValueType());
         }
         return (ID)ids;
     }

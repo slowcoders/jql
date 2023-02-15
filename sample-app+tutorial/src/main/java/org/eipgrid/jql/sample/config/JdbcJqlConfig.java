@@ -1,5 +1,6 @@
 package org.eipgrid.jql.sample.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.config.DefaultJqlConfig;
 import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.springframework.context.annotation.Bean;
@@ -15,10 +16,10 @@ public class JdbcJqlConfig extends DefaultJqlConfig {
 
     @Bean
     public JdbcStorage jdbcStorage(DataSource dataSource, TransactionTemplate transactionTemplate,
-                                  ConversionService conversionService,
+                                  ObjectMapper objectMapper,
                                   EntityManager entityManager) throws Exception {
         JdbcStorage storage = new JdbcStorage(dataSource, transactionTemplate,
-                conversionService, entityManager);
+                objectMapper, entityManager);
         return storage;
     }
 }
