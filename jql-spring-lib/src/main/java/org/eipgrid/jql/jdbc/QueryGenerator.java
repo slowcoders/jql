@@ -15,8 +15,4 @@ public interface QueryGenerator {
 
     String createDeleteQuery(JqlFilter where);
 
-    String prepareFindByIdStatement(QSchema schema);
-
-    String createInsertStatement(QSchema schema, Map entity, boolean ignoreConflict);
-
 }

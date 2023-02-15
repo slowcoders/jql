@@ -3,9 +3,10 @@ package org.eipgrid.jql.jdbc.metadata;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.jpa.JPAUtils;
-import org.eipgrid.jql.schema.*;
+import org.eipgrid.jql.schema.QColumn;
+import org.eipgrid.jql.schema.QJoin;
+import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.util.CaseConverter;
-import org.eipgrid.jql.util.ClassUtils;
 import org.eipgrid.jql.util.SourceWriter;
 
 import javax.persistence.Column;
@@ -16,15 +17,27 @@ import java.util.*;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class JdbcSchema extends QSchema {
+
+    private final JdbcSchemaLoader schemaLoader;
+
     private HashMap<String, ArrayList<String>> uniqueConstraints = new HashMap<>();
     private final HashMap<String, List<QColumn>> fkConstraints = new HashMap<>();
 
+    private Map<String, QJoin> entityJoinMap;
     private ArrayList<QColumn> unresolvedJpaColumns;
     private Class<?> idType;
 
-    protected JdbcSchema(SchemaLoader schemaLoader, String tableName, Class<?> ormType) {
-        super(schemaLoader, tableName, ormType);
+    protected JdbcSchema(JdbcSchemaLoader schemaLoader, String tableName, Class<?> ormType) {
+        super(tableName, ormType);
+        this.schemaLoader = schemaLoader;
     }
+
+    public final JdbcSchemaLoader getSchemaLoader() {
+        return schemaLoader;
+    }
+
+    public final Class<?> getIDType() { return idType; }
+
 
     protected void init(ArrayList<? extends QColumn> columns, HashMap<String, ArrayList<String>> uniqueConstraints, Class<?> ormType) {
         this.uniqueConstraints = uniqueConstraints;
@@ -59,6 +72,12 @@ public class JdbcSchema extends QSchema {
     }
 
 
+    public Map<String, QJoin> getEntityJoinMap() {
+        if (this.entityJoinMap == null) {
+            this.entityJoinMap = schemaLoader.loadJoinMap(this);
+        }
+        return this.entityJoinMap;
+    }
 
     public static void dumpJPAHeader(SourceWriter sb, boolean includeJsonType) {
         if (includeJsonType) {
@@ -77,7 +96,7 @@ public class JdbcSchema extends QSchema {
             dumpJPAHeader(sb, !this.getObjectColumns().isEmpty());
         }
 
-        String comment = ((JdbcSchemaLoader)this.getSchemaLoader()).getTableComment(this.getTableName());
+        String comment = this.schemaLoader.getTableComment(this.getTableName());
 
         if (comment != null && comment.length() > 0) {
             sb.write("/** ").write(comment).writeln(" */");
@@ -377,8 +396,7 @@ public class JdbcSchema extends QSchema {
                 }
             }
         }
-        CaseConverter cvt = getSchemaLoader().getNameConverter();
-        String colName = cvt.toPhysicalColumnName(f.getName());
+        String colName = schemaLoader.toPhysicalColumnName(f.getName());
         return colName;
     }
 

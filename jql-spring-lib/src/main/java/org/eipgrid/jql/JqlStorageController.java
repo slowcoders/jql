@@ -38,6 +38,16 @@ public interface JqlStorageController {
             return storage.getRepository(tablePath);
         }
 
+        @GetMapping(path = "/")
+        @Operation(summary = "Table 목록")
+        @ResponseBody
+        public List<String> listTableNames() {
+            int p = tableNamePrefix.indexOf('.');
+            String namespace = p <= 0 ? null : tableNamePrefix.substring(0, p);
+            List<String> tableNames = storage.getTableNames(namespace);
+            return tableNames;
+        }
+
         @GetMapping(path = "/{table}/{id}")
         @Operation(summary = "지정 엔터티 읽기")
         @Transactional

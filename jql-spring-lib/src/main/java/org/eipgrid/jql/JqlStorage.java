@@ -29,7 +29,9 @@ public abstract class JqlStorage {
         this.transactionTemplate = transactionTemplate;
     }
 
+    public abstract List<String> getNamespaces();
 
+    public abstract List<String> getTableNames(String namespace);
 
     public TransactionTemplate getTransactionTemplate() {
         return this.transactionTemplate;
@@ -39,26 +41,21 @@ public abstract class JqlStorage {
         return objectMapper;
     }
 
+
     public abstract JqlRepository getRepository(String tableName);
 
-    public abstract <T, ID> JPARepositoryBase<T, ID> getRepository(Class<T> entityType);
+    public abstract <T, ID> JqlRepository<T, ID> getRepository(Class<T> entityType);
 
     public abstract QSchema loadSchema(String tableName);
 
     public abstract QSchema loadSchema(Class entityType);
 
-    public String makeTablePath(String schema, String name) {
-        name = schema + "." + name;
-        return name;
-    }
-
     public String toPhysicalColumnName(String fieldName) {
-        Identifier physicalName = this.namingStrategy.toPhysicalColumnName(Identifier.toIdentifier(fieldName, false), null);
-        return physicalName.getCanonicalName();
+        return CaseConverter.toSnakeCase(fieldName);
     }
 
-    @Override
     public String toLogicalAttributeName(String columnName) {
+        return CaseConverter.toCamelCase(columnName, false);
     }
 
 }

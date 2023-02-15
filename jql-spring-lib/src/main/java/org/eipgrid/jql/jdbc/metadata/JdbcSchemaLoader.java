@@ -1,15 +1,17 @@
 package org.eipgrid.jql.jdbc.metadata;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.JqlRepository;
+import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.jdbc.SqlGenerator;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.SchemaLoader;
 import org.eipgrid.jql.util.CaseConverter;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Table;
@@ -18,7 +20,9 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
 
-public class JdbcSchemaLoader extends SchemaLoader {
+public abstract class JdbcSchemaLoader extends JqlStorage {
+    private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
     private final JdbcTemplate jdbc;
     private String defaultNamespace;
     private boolean schemaSupported;
@@ -29,12 +33,12 @@ public class JdbcSchemaLoader extends SchemaLoader {
     private final HashMap<Class<?>, QSchema> classToSchemaMap = new HashMap<>();
     private final HashMap<String, QSchema> schemaMap = new HashMap<>();
 
-    private final EntityManager entityManager;
 
-    public JdbcSchemaLoader(EntityManager entityManager, DataSource dataSource, CaseConverter nameConverter) {
-        super(nameConverter);
+    protected JdbcSchemaLoader(DataSource dataSource, TransactionTemplate transactionTemplate, ObjectMapper objectMapper, EntityManager entityManager) {
+        super(transactionTemplate, objectMapper);
         this.jdbc = new JdbcTemplate(dataSource);
         this.entityManager = entityManager;
+        this.transactionTemplate = transactionTemplate;
         Properties dbProperties = jdbc.execute(new ConnectionCallback<Properties>() {
             @Override
             public Properties doInConnection(Connection conn) throws SQLException, DataAccessException {
@@ -50,6 +54,17 @@ public class JdbcSchemaLoader extends SchemaLoader {
             }
         });
     }
+
+    public final EntityManager getEntityManager() { return entityManager; }
+
+    public final DataSource getDataSource() {
+        return this.jdbc.getDataSource();
+    }
+
+    public final JdbcTemplate getJdbcTemplate() {
+        return jdbc;
+    }
+
 
     private void initialize() {
         if (ormTypeMap != null) return;
@@ -79,7 +94,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         return makeTablePath(catalog, schema, name);
     }
 
-    public QSchema loadSchema(Class<?> entityType) {
+    public QSchema loadSchema(Class entityType) {
         initialize();
         QSchema schema = classToSchemaMap.get(entityType);
         if (schema == null) {
@@ -173,8 +188,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         return schema;
     }
 
-    @Override
-    protected HashMap<String, QJoin> loadJoinMap(QSchema schema) {
+    protected Map<String, QJoin> loadJoinMap(QSchema schema) {
         EntityJoinHelper exportedJoins = jdbc.execute(new ConnectionCallback<EntityJoinHelper>() {
             @Override
             public EntityJoinHelper doInConnection(Connection conn) throws SQLException, DataAccessException {
@@ -246,7 +260,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         return keys;
     }
 
-    public List<String> getTableNames(String namespace) throws SQLException {
+    public List<String> getTableNames(String namespace) {
         List<String> tableNames = jdbc.execute(new ConnectionCallback<List<String>>() {
             @Override
             public List<String> doInConnection(Connection conn) throws SQLException, DataAccessException {
@@ -513,7 +527,7 @@ public class JdbcSchemaLoader extends SchemaLoader {
         }
     }
 
-    public SqlGenerator createSqlGenerator(boolean isNativeQuery) {
+    protected SqlGenerator createSqlGenerator(boolean isNativeQuery) {
         return new SqlGenerator(isNativeQuery);
     }
 }

@@ -26,7 +26,7 @@ public abstract class JdbcMetadataController {
 
 
     private QSchema getSchema(String namespace, String tableName) throws Exception {
-        String tablePath = storage.makeTablePath(namespace, tableName);
+        String tablePath = namespace + '.' + tableName;
         return storage.loadSchema(tablePath);
     }
 

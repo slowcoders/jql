@@ -1,52 +1,28 @@
 package org.eipgrid.jql.jdbc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eipgrid.jql.jdbc.metadata.JdbcSchemaLoader;
 import org.eipgrid.jql.jpa.JPARepositoryBase;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.schema.SchemaLoader;
-import org.eipgrid.jql.jdbc.metadata.JdbcSchemaLoader;
-import org.eipgrid.jql.JqlRepository;
-import org.eipgrid.jql.JqlStorage;
-import org.eipgrid.jql.util.CaseConverter;
-import org.springframework.core.convert.ConversionService;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.sql.DataSource;
-import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 
-public class JdbcStorage extends JqlStorage {
-    JdbcSchemaLoader jdbcSchemaLoader;
-    private final JdbcTemplate jdbc;
-    private HashMap<String, JqlRepository> repositories = new HashMap<>();
+public class JdbcStorage extends JdbcSchemaLoader {
+    private HashMap<String, JDBCRepositoryBase> repositories = new HashMap<>();
     private HashMap<Class, JPARepositoryBase> jpaRepositories = new HashMap<>();
 
     public JdbcStorage(DataSource dataSource,
                        TransactionTemplate transactionTemplate,
                        ObjectMapper objectMapper,
                        EntityManager entityManager) throws Exception {
-        super(transactionTemplate, conversionService,
-                entityManager);
-        this.jdbc = new JdbcTemplate(dataSource);
-        jdbcSchemaLoader = new JdbcSchemaLoader(entityManager, dataSource, CaseConverter.defaultConverter);
+        super(dataSource, transactionTemplate, objectMapper, entityManager);
     }
 
-    public SchemaLoader getSchemaLoader() {
-        return jdbcSchemaLoader;
-    }
-
-    public DataSource getDataSource() {
-        return this.jdbc.getDataSource();
-    }
-
-    public JdbcTemplate getJdbcTemplate() {
-        return jdbc;
-    }
-
-    private JqlRepository createRepository(QSchema schema) {
-        JqlRepository repo;
+    private JDBCRepositoryBase createRepository(QSchema schema) {
+        JDBCRepositoryBase repo;
         synchronized (repositories) {
             String tableName = schema.getTableName();
             if (schema.isJPARequired()) {
@@ -61,13 +37,13 @@ public class JdbcStorage extends JqlStorage {
         return repo;
     }
 
-    public JqlRepository getRepository(String tableName) {
-        JqlRepository repo = repositories.get(tableName);
+    public JDBCRepositoryBase getRepository(String tableName) {
+        JDBCRepositoryBase repo = repositories.get(tableName);
         if (repo == null) {
             synchronized (repositories) {
                 repo = repositories.get(tableName);
                 if (repo == null) {
-                    QSchema schema = jdbcSchemaLoader.loadSchema(tableName);
+                    QSchema schema = super.loadSchema(tableName);
                     repo = createRepository(schema);
                 }
             }
@@ -81,7 +57,7 @@ public class JdbcStorage extends JqlStorage {
             synchronized (repositories) {
                 repo = jpaRepositories.get(entityType);
                 if (repo == null) {
-                    QSchema schema = jdbcSchemaLoader.loadSchema(entityType);
+                    QSchema schema = super.loadSchema(entityType);
                     repo = (JPARepositoryBase)createRepository(schema);
                 }
             }
@@ -89,23 +65,11 @@ public class JdbcStorage extends JqlStorage {
         return repo;
     }
 
-    public QSchema loadSchema(String tablePath) {
-        return jdbcSchemaLoader.loadSchema(tablePath);
-    }
 
-    public QSchema loadSchema(Class entityType) {
-        return jdbcSchemaLoader.loadSchema(entityType);
-    }
+    public final QueryGenerator createQueryGenerator() { return createQueryGenerator(true); }
 
-    public List<String> getTableNames(String dbSchema) throws SQLException {
-        return jdbcSchemaLoader.getTableNames(dbSchema);
-    }
-
-    public List<String> getNamespaces() {
-        return jdbcSchemaLoader.getNamespaces();
-    }
 
     public QueryGenerator createQueryGenerator(boolean isNativeQuery) {
-        return jdbcSchemaLoader.createSqlGenerator(isNativeQuery);
+        return super.createSqlGenerator(isNativeQuery);
     }
 }
