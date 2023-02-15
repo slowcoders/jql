@@ -6,7 +6,6 @@ import org.eipgrid.jql.jpa.JPAUtils;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.util.CaseConverter;
 import org.eipgrid.jql.util.SourceWriter;
 
 import javax.persistence.Column;
@@ -106,7 +105,7 @@ public class JdbcSchema extends QSchema {
 
         /* TODO multi-key, EmbeddedId, Embeddable, Element */
         boolean isMultiPKs = false && getPKColumns().size() > 1;
-        String className = getEntityClassName(this);
+        String className = schemaLoader.suggestEntityClassName(this);
         if (isMultiPKs) {
             sb.write("@IdClass(").write(className).writeln(".ID.class)");
         }
@@ -256,7 +255,7 @@ public class JdbcSchema extends QSchema {
             sb.decTab();
         }
 
-        String mappedType = getEntityClassName(mappedSchema);
+        String mappedType = schemaLoader.suggestEntityClassName(mappedSchema);
         sb.write("private ");
         if (!isArrayJoin) {
             sb.write(mappedType);
@@ -307,10 +306,6 @@ public class JdbcSchema extends QSchema {
             sb.decTab();
             sb.replaceTrailingComma("\n},\n");
         }
-    }
-
-    static String getEntityClassName(QSchema schema) {
-        return CaseConverter.toCamelCase(schema.getSimpleTableName(), true);
     }
 
     private String getJavaFieldName(QJoin join) {

@@ -9,8 +9,8 @@ import java.util.HashSet;
 class EntityJoinHelper extends HashMap<QSchema, QJoin> {
     private String tableName;
     private HashSet<QSchema> conflictMappings = new HashSet<>();
-    public EntityJoinHelper(QSchema pkSchema) {
-        this.tableName = JdbcSchema.getEntityClassName(pkSchema).toLowerCase();
+    public EntityJoinHelper(JdbcSchema pkSchema) {
+        this.tableName = pkSchema.getSchemaLoader().suggestEntityClassName(pkSchema).toLowerCase();
     }
 
     public void validate() {

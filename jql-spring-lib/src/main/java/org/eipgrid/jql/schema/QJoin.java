@@ -108,7 +108,7 @@ public class QJoin {
         }
         QColumn first_fk = fkColumns.get(0);
         if (!inverseMapped && fkColumns.size() == 1) {
-            return resolveJsonKey(first_fk);
+            return resolveForeignKeyPropertyName(first_fk);
         }
 
         String name;
@@ -131,26 +131,33 @@ public class QJoin {
             name = first_fk.getJoinedPrimaryColumn().getSchema().getSimpleTableName();
         }
 
-        name = CaseConverter.toCamelCase(name, false);
+        name = baseSchema.getSchemaLoader().toLogicalAttributeName(name);
         return name;
     }
 
-    public static String resolveJsonKey(QColumn fk) {
+    public static String resolveForeignKeyPropertyName(QColumn fk) {
         if (fk.getMappedOrmField() != null) {
             return fk.getJsonKey();
         }
 
         QColumn joinedPk = fk.getJoinedPrimaryColumn();
-        String fk_name = fk.getPhysicalName();
-        String pk_name = joinedPk.getPhysicalName();
+        String fk_name = fk.getPhysicalName().toLowerCase();
+        String pk_name = joinedPk.getPhysicalName().toLowerCase();
         String js_key;
-        if (fk_name.endsWith("_" + pk_name)) {
+        if (fk_name.indexOf('_') < 0) {
+            js_key = fk_name;
+        }
+        else if (fk_name.endsWith("_id") &&
+                fk.getSchema().findColumn(js_key = fk_name.substring(0, fk_name.length() - 3)) == null) {
+            // js_key already set;
+        }
+        else if (fk_name.endsWith("_" + pk_name)) {
             // if (pilot_id -> character.id) { json_key = pilot }
             js_key = fk_name.substring(0, fk_name.length() - pk_name.length() - 1);
         } else {
             js_key = joinedPk.getSchema().getSimpleTableName();
         }
-        js_key = CaseConverter.toCamelCase(js_key, false);
+        js_key = fk.getSchema().getSchemaLoader().toLogicalAttributeName(js_key);
         return js_key;
     }
 

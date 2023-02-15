@@ -65,7 +65,10 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         return jdbc;
     }
 
-
+    public final boolean isDBSchemaSupported() {
+        return this.schemaSupported;
+    }
+    
     private void initialize() {
         if (ormTypeMap != null) return;
         synchronized (this) {
@@ -75,8 +78,8 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
             Set<EntityType<?>> types = entityManager.getEntityManagerFactory().getMetamodel().getEntities();
             for (EntityType<?> type : types) {
                 Class<?> clazz = type.getJavaType();
-                if (clazz.getAnnotation(Table.class) != null) {
-                    TablePath tablePath = resolveTableName(clazz);
+                TablePath tablePath = TablePath.of(clazz, this);
+                if (tablePath != null) {
                     ormTypeMap.put(tablePath.getQualifiedName(), clazz);
                 }
             }
@@ -86,19 +89,16 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
     public String getDefaultNamespace() { return this.defaultNamespace; }
 
-    public TablePath resolveTableName(Class<?> entityType) {
-        Table table = entityType.getAnnotation(Table.class);
-        String name = table.name().trim();;
-        String schema = table.schema().trim();
-        String catalog = table.catalog().trim();
-        return makeTablePath(catalog, schema, name);
+    protected String suggestEntityClassName(QSchema schema) {
+        return CaseConverter.toCamelCase(schema.getSimpleTableName(), true);
     }
+
 
     public QSchema loadSchema(Class entityType) {
         initialize();
         QSchema schema = classToSchemaMap.get(entityType);
         if (schema == null) {
-            TablePath tablePath = resolveTableName(entityType);
+            TablePath tablePath = TablePath.of(entityType, this);
             schema = loadSchema(tablePath, entityType);
         }
         return schema;
@@ -112,39 +112,10 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
             if (ormType == null) {
                 ormType = JqlRepository.RawEntityType;
             }
-            TablePath tablePath = qualifiedNameToTablePath(tableName);
+            TablePath tablePath = TablePath.of(tableName, this);
             schema = loadSchema(tablePath, ormType);
         }
         return schema;
-    }
-
-    static class TablePath {
-        String catalog;
-        String schema;
-        String qualifiedName;
-        String simpleName;
-        TablePath(String catalog, String schema, String qualifiedName, String simpleName) {
-            this.catalog = catalog;
-            this.schema = schema;
-            this.qualifiedName = qualifiedName;
-            this.simpleName = simpleName;
-        }
-
-        public String getQualifiedName() {
-            return qualifiedName;
-        }
-
-        public String getSimpleName() {
-            return simpleName;
-        }
-
-        public String getCatalog() {
-            return catalog;
-        }
-
-        public String getSchema() {
-            return schema;
-        }
     }
 
     private QSchema loadSchema(TablePath tablePath, Class<?> ormType0) {
@@ -192,17 +163,10 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         EntityJoinHelper exportedJoins = jdbc.execute(new ConnectionCallback<EntityJoinHelper>() {
             @Override
             public EntityJoinHelper doInConnection(Connection conn) throws SQLException, DataAccessException {
-                return getExternalJoins(conn, (JdbcSchema) schema, qualifiedNameToTablePath(schema.getTableName()));
+                return getExternalJoins(conn, (JdbcSchema) schema);
             }
         });
         return createJoinMap((JdbcSchema) schema, exportedJoins);
-    }
-
-    protected TablePath qualifiedNameToTablePath(String qname) {
-        int last_dot_p = qname.lastIndexOf('.');
-        String namespace = last_dot_p > 0 ? qname.substring(0, last_dot_p) : null;//getDefaultDBSchema();
-        String simpleName = qname.substring(last_dot_p + 1);
-        return new TablePath(namespace, namespace, qname, simpleName);
     }
 
     private static class JoinMap extends HashMap<String, QJoin> {
@@ -354,7 +318,8 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         }
     }
 
-    private EntityJoinHelper getExternalJoins(Connection conn, JdbcSchema pkSchema, TablePath tablePath) throws SQLException {
+    private EntityJoinHelper getExternalJoins(Connection conn, JdbcSchema pkSchema) throws SQLException {
+        final TablePath tablePath = TablePath.of(pkSchema.getTableName(), JdbcSchemaLoader.this);
         DatabaseMetaData md = conn.getMetaData();
         ResultSet rs = md.getExportedKeys(tablePath.getCatalog(), tablePath.getSchema(), tablePath.getSimpleName());
 
@@ -390,7 +355,7 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
     }
 
     public String getTableComment(String tableName) {
-        TablePath tablePath = qualifiedNameToTablePath(tableName);
+        TablePath tablePath = TablePath.of(tableName, this);
         String comment = null;
         if ("postgresql".equals(dbType)) {
         }
@@ -457,18 +422,6 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         }
     }
 
-    protected TablePath makeTablePath(String db_catalog, String db_schema, String simple_name) {
-        String namespace = schemaSupported ? db_schema : db_catalog;
-        simple_name = CaseConverter.camelCaseConverter.toPhysicalColumnName(simple_name).toLowerCase();
-
-        if (namespace == null || namespace.length() == 0) {
-            namespace = getDefaultNamespace();
-        }
-        namespace = CaseConverter.camelCaseConverter.toPhysicalColumnName(namespace).toLowerCase();
-        String qname = namespace + "." + simple_name;
-        return new TablePath(db_catalog, db_schema, qname, simple_name);
-    }
-
 
     public String createDDL(QSchema schema) {
 //        SQLWriter sb = new SQLWriter(schema);
@@ -517,8 +470,8 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
             this.pkColumnName = rs.getString("pkcolumn_name");
             this.fkColumnName = rs.getString("fkcolumn_name");
-            this.fkTableQName = loader.makeTablePath(fktable_cat, fktable_schem, fktable_name).getQualifiedName();
-            this.pkTableQName = loader.makeTablePath(pktable_cat, pktable_schem, pktable_name).getQualifiedName();
+            this.fkTableQName = TablePath.of(fktable_cat, fktable_schem, fktable_name, loader).getQualifiedName();
+            this.pkTableQName = TablePath.of(pktable_cat, pktable_schem, pktable_name, loader).getQualifiedName();
 
             this.key_seq = rs.getInt("key_seq");
             this.update_rule = rs.getInt("update_rule");

@@ -111,10 +111,10 @@ public class JdbcColumn extends QColumn {
         StringBuilder sb = new StringBuilder();
         QColumn col = this;
         for (QColumn joinedPk; (joinedPk = col.getJoinedPrimaryColumn()) != null; col = joinedPk) {
-            String token = QJoin.resolveJsonKey(col);
+            String token = QJoin.resolveForeignKeyPropertyName(col);
             sb.append(token).append('.');
         }
-        String name = getSchema().getSchemaLoader().toLogicalAttributeName(col.getPhysicalName());
+        String name = schema.getSchemaLoader().toLogicalAttributeName(col.getPhysicalName());
         if (this != col) {
             sb.append(name);
             name = sb.toString();
