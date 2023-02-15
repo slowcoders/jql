@@ -19,7 +19,7 @@ public class Episode implements java.io.Serializable {
     private String title;
 
     @Getter @Setter
-    @Column(name = "published", nullable = true)
+    @Column(name = "published", nullable = true, columnDefinition = "timestamp")
     private java.sql.Timestamp published;
 
     @Getter @Setter
