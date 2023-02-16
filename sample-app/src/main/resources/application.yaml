@@ -1,0 +1,89 @@
+logging:
+  level:
+    sql: debug
+    jdbc: debug
+    jdbc.sqlonly: debug
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql: debug
+    org:
+      springframework:
+        web:
+          filter:
+            CommonsRequestLoggingFilter: debug
+        security: DEBUG
+
+  pattern:
+    console: "%-5level %d{yyyy-MM-dd HH:mm:ss}[%thread] [%F - %M] [%logger{0}:%line] - %msg%n"
+    file: "%-5level %d{yyyy-MM-dd HH:mm:ss}[%thread] [%F - %M] [%logger{0}:%line] - %msg%n"
+
+management.security.enabled: false
+security.basic.enabled: false
+
+server:
+  url: http://localhost:7007
+  port: 7007
+  contextPath: "/"
+  compression:
+    enabled: true # 응답 결과 압축 허용.
+    min-response-size: 2048
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript
+
+
+database: postgresql
+  
+spring:
+  sql.init:
+      mode: always
+      schema-locations: classpath*:db/${database}/starwars-schema.sql
+      data-locations: classpath*:db/${database}/starwars-data.sql
+  session:
+    store-type: none  # Session 저장 유형 StoreType 참조.
+    timeout: 3600     # Session timeout.
+
+
+  datasource:
+    url: ${DB_URL:jdbc:${database}://localhost/jql_demo}
+    username: ${DB_USER:jql_demo}
+    password: ${DB_PASS:jql_demo}
+
+  jpa:
+#    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+      # open-in-view: true(=default) 인 경우, 모든 Controller API 가 자동적으로 Transaction 을 생성한다.
+      #               단, API 실행에 긴 시간이 걸리는 경우, 그 시간만큼 DB Connection 을 유지하는 단점이 있다.
+      #               일반적인 상황에서는 true를 사용한다.
+      # open-in-view: false 로 변경하면, 명시적인 @Transactional 설정이 필요하다.
+    open-in-view: true
+    hibernate:
+      ddl-auto: update
+      temp.use_jdbc_metadata_defaults: false
+      jdbc.lab.non_contextual_creation: true
+      ## DB 칼럼명에 대소문자를 섞어 사용하는 경우에 필요.
+      naming.physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+    properties:
+      ### @Cacheable 이 명시된 Entity 만 cache 되도록 설정.
+      javax.persistence.sharedCache.mode: ENABLE_SELECTIVE
+
+      hibernate:
+        ### to disable camelCase
+        # physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+        format_sql: true
+
+        ### default schema for entity.
+        default_schema: eip_edge
+
+        # Hibernate cache 설정.
+        #--------------------------
+
+        ### @Cacheable 에 대해 자동 Cache 선택, false 인 경우, @Cache 사용하여 region 명시 필요 (see CacheConfig)
+        javax.cache.missing_cache_strategy: create
+        cache:
+          ### true: 2nd level cache 활성화.
+          use_second_level_cache: true
+          use_query_cache: true
+          ### jcache 사용시
+          region.factory_class: org.hibernate.cache.jcache.internal.JCacheRegionFactory
+          ### hibernate-ehcache 사용시
+          # region.factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory

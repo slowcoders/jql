@@ -13,3 +13,6 @@ sample-app+tutorial/.idea
 sample-app+tutorial/db/data
 derby.log
 .idea
+.gradle
+sample-app/build
+sample-app/db/data

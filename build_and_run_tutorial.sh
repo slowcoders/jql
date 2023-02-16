@@ -1,10 +1,11 @@
-docker-compose -f sample-app+tutorial/db/docker-compose.yml up -d postgres
+docker-compose -f ./sample-app/db/docker-compose.yml up -d postgres
 
-pushd sample-app+tutorial/tutorial
+pushd ./tutorial
 npm install
 npm run build
 popd
 
-pushd sample-app+tutorial
+pushd sample-app
 ./gradlew bootRun --console=plain
 popd
+
