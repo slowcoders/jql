@@ -33,7 +33,7 @@ public class StarWarsJpaService  {
     }
     public void loadData() throws IOException {
         String dbType = storage.getDbType();
-        ClassPathResource resource = new ClassPathResource("../db/" + dbType + "/starwars_jpa-data.sql");
+        ClassPathResource resource = new ClassPathResource("db/" + dbType + "/starwars_jpa-data.sql");
         BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()));
         StringBuilder sql = new StringBuilder();
         for (String s = null; (s = br.readLine()) != null; ) {
