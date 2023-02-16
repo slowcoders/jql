@@ -23,15 +23,15 @@
            node-version: 18
 
        - name: Build and run application
-         working-directory: sample-app+tutorial
+         working-directory: sample-app
          run: | 
-          sh db/start_postgres.sh
+          sh ../db/start_postgres.sh
           ./gradlew build
-          nohup java -jar build/libs/jql-sample-app.jar &
+          nohup java -jar build/libs/sample-app.jar &
           sleep 1
 
        - name: Run jest integration tests
-         working-directory: sample-app+tutorial/tutorial
+         working-directory: tutorial+test
          run: |
           npm install
           npm run test

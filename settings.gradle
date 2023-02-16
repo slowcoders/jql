@@ -1,0 +1,3 @@
+rootProject.name = 'jql'
+include ':jql-spring-lib'
+include ':sample-app'

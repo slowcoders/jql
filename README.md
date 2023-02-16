@@ -16,7 +16,7 @@ http://localhost:7007
 
 ## Run test (jest)
 ```
-cd sample-app+tutorial/tutorial
+cd tutorial+test
 npm install
 npm run test
 ```
