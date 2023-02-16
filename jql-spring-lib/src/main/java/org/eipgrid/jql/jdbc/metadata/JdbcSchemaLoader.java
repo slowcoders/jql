@@ -170,9 +170,6 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
         public void add(JdbcSchema schema, List<QColumn> fkColumns, QJoin associateJoin) {
             QJoin join = new QJoin(schema, fkColumns, associateJoin);
-            if (join.getJsonKey().equals("cbsw_comtype")) {
-                join = new QJoin(schema, fkColumns, associateJoin);
-            }
             QJoin old = super.get(join.getJsonKey());
             if (old != null) {
                 join.resolveNameConflict(old);
@@ -190,14 +187,14 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
             List<QColumn> fkColumns = fkJoin.getForeignKeyColumns();
             joinMap.add(baseSchema, fkColumns, null);
 
-            if (!fkColumns.get(0).getSchema().hasOnlyForeignKeys()) continue;
-
-            JdbcSchema exSchema = (JdbcSchema) fkJoin.getBaseSchema();
-            Collection<String> fkConstraints = exSchema.getForeignKeyConstraints().keySet();
-            for (String fkConstraint : fkConstraints) {
-                QJoin j2 = exSchema.getJoinByForeignKeyConstraints(fkConstraint);
-                if (j2 != fkJoin) {// && linkedSchema != baseSchema) {
-                    joinMap.add(baseSchema, fkColumns, j2);
+            if (fkColumns.get(0).getSchema().hasOnlyForeignKeys()) {
+                JdbcSchema exSchema = (JdbcSchema) fkJoin.getBaseSchema();
+                Collection<String> fkConstraints = exSchema.getForeignKeyConstraints().keySet();
+                for (String fkConstraint : fkConstraints) {
+                    QJoin j2 = exSchema.getJoinByForeignKeyConstraints(fkConstraint);
+                    if (j2 != fkJoin) {// && linkedSchema != baseSchema) {
+                        joinMap.add(baseSchema, fkColumns, j2);
+                    }
                 }
             }
         }

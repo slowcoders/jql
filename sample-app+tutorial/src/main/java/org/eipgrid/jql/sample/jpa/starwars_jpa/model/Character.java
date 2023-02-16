@@ -42,7 +42,7 @@ public class Character implements java.io.Serializable {
 
     @Getter @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "pilot")
-    private List<Starship> starship_;
+    private Set<Starship> starship_;
 
     @Getter @Setter
     @ManyToMany(fetch = FetchType.LAZY)
@@ -51,7 +51,7 @@ public class Character implements java.io.Serializable {
                     @UniqueConstraint(name ="character_id__episode_id__uindex", columnNames = {"character_id", "episode_id"})
             },
             joinColumns = @JoinColumn(name="character_id"), inverseJoinColumns = @JoinColumn(name="episode_id"))
-    private List<Episode> episode_;
+    private Set<Episode> episode_;
 
     @Getter @Setter
     @ManyToMany(fetch = FetchType.LAZY)
@@ -60,6 +60,6 @@ public class Character implements java.io.Serializable {
                     @UniqueConstraint(name ="character_id__friend_id__uindex", columnNames = {"character_id", "friend_id"})
             },
             joinColumns = @JoinColumn(name="character_id"), inverseJoinColumns = @JoinColumn(name="friend_id"))
-    private List<Character> friend_;
+    private Set<Character> friend_;
 
 }

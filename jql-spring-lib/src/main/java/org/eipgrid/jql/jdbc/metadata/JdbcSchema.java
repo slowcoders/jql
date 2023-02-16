@@ -71,7 +71,7 @@ public class JdbcSchema extends QSchema {
     }
 
 
-    public Map<String, QJoin> getEntityJoinMap() {
+    public synchronized Map<String, QJoin> getEntityJoinMap() {
         if (this.entityJoinMap == null) {
             this.entityJoinMap = schemaLoader.loadJoinMap(this);
         }
@@ -260,9 +260,23 @@ public class JdbcSchema extends QSchema {
         if (!isArrayJoin) {
             sb.write(mappedType);
         } else {
-            sb.write("List<").write(mappedType).write(">");
+            QSchema fkSchema = firstFk.getSchema();
+            boolean partOfUnique = true || ((JdbcSchema)fkSchema).isPartOfUniqueConstraint(firstFk);
+            sb.write(partOfUnique ? "Set<" : "List<").write(mappedType).write(">");
         }
         sb.write(" ").write(getJavaFieldName(join)).write(";\n\n");
+    }
+
+    private boolean isPartOfUniqueConstraint(QColumn column) {
+        String col_name = column.getPhysicalName().toLowerCase();
+        for (ArrayList<String> columns : this.uniqueConstraints.values()) {
+            for (String name : columns) {
+                if (col_name.equals(name.toLowerCase())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private String getFKConstraintName(QColumn fk) {

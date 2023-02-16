@@ -29,6 +29,6 @@ public class Episode implements java.io.Serializable {
                     @UniqueConstraint(name ="character_id__episode_id__uindex", columnNames = {"character_id", "episode_id"})
             },
             joinColumns = @JoinColumn(name="episode_id"), inverseJoinColumns = @JoinColumn(name="character_id"))
-    private List<Character> character_;
+    private Set<Character> character_;
 
 }
