@@ -193,10 +193,9 @@ export default {
 const dbSchema = '${vm.selectedStorage}'
 const dbTable = '${vm.selectedTable}'
 const AUTO = ""
-
 ${vm.js_code}
 const jql = {
-  select: ${vm.selectedColumns?.length > 0 ? '"' + vm.selectedColumns + '"' : 'AUTO'},\
+  select: jql_select,\
   ${vm.first_sort?.length > 0 ? '\n  sort: "' + vm.first_sort + '", ' : ''}\
   ${vm.limit > 0 ? '\n  limit: ' + vm.limit + ', ' : ''}
   filter: jql_filter

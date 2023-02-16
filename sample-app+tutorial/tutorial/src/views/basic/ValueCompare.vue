@@ -18,6 +18,8 @@
 import LessonView from "@/components/LessonView";
 
 const sample_code = `
+const jql_select = AUTO;
+
 const jql_filter = {
   // "id": 1001
   // "id@not": 1001

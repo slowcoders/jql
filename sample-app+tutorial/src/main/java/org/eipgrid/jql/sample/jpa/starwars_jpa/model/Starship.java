@@ -1,8 +1,8 @@
-package org.eipgrid.jql.sample.jpa.starwars.model;
+package org.eipgrid.jql.sample.jpa.starwars_jpa.model;
 
 import lombok.Getter;
 import lombok.Setter;
-import java.util.*;
+
 import javax.persistence.*;
 
 

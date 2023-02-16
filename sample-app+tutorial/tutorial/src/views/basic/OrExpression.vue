@@ -17,6 +17,8 @@
 import LessonView from "@/components/LessonView";
 
 const sample_code = `
+const jql_select = AUTO;
+
 const normal_height = {
     "height@gt": 1.2,
     "height@lt": 2.0

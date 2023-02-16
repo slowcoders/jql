@@ -19,6 +19,8 @@
 import LessonView from "@/components/LessonView";
 
 const sample_code = `
+const jql_select = AUTO;
+
 const jql_filter = {
   "species" : "Human",
 
