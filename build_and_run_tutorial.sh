@@ -1,4 +1,4 @@
-docker-compose -f ./sample-app/db/docker-compose.yml up -d postgres
+docker-compose -f ./db/docker-compose.yml up postgres
 
 pushd ./tutorial
 npm install
