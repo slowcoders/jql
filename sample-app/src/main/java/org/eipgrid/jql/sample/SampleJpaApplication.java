@@ -7,7 +7,7 @@ import org.springframework.context.event.EventListener;
 
 
 @SpringBootApplication
-public class JqlSampleApplication {
+public class SampleJpaApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(JqlSampleApplication.class, args);
 	}

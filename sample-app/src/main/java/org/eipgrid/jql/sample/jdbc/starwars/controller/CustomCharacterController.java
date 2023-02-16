@@ -2,9 +2,9 @@ package org.eipgrid.jql.sample.jdbc.starwars.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.JqlTableController;
-import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.util.KVEntity;
 import org.springframework.web.bind.annotation.*;
 

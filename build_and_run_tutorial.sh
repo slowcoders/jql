@@ -2,7 +2,7 @@
 
 docker-compose -f ./db/docker-compose.yml up -d postgres
 
-pushd ./tutorial
+pushd ./tutorial+test
 npm install
 npm run build
 popd

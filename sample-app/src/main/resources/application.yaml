@@ -72,7 +72,7 @@ spring:
         format_sql: true
 
         ### default schema for entity.
-        default_schema: eip_edge
+        ## default_schema: schema-name
 
         # Hibernate cache 설정.
         #--------------------------
