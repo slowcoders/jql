@@ -1,12 +1,12 @@
-package org.eipgrid.jql.sample.jpa.starwars.controller;
+package org.eipgrid.jql.sample.jpa.starwars_jpa.controller;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.apache.commons.io.IOUtils;
 import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.JqlStorageController;
 import org.eipgrid.jql.jdbc.JdbcStorage;
+import org.eipgrid.jql.sample.jpa.starwars_jpa.StarWarsJpaService;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +19,11 @@ import java.io.InputStreamReader;
 @RequestMapping("/api/jql/starwars_jpa")
 public class StarWarsJpaController extends JqlStorageController.CRUD implements JqlStorageController.ListAll {
 
-    public StarWarsJpaController(JqlStorage storage, ConversionService conversionService) {
-        super(storage, "starwars_jpa.", conversionService);
+    private final StarWarsJpaService service;
+
+    public StarWarsJpaController(StarWarsJpaService service, ConversionService conversionService) {
+        super(service.getStorage(), "starwars_jpa.", conversionService);
+        this.service = service;
     }
 
     @Override
@@ -33,20 +36,8 @@ public class StarWarsJpaController extends JqlStorageController.CRUD implements 
         return resp;
     }
 
-    @GetMapping("/{dbType}/loadData")
-    public void loadData(
-            @Schema(allowableValues = {"postgresql", "mysql"})
-            @PathVariable String dbType) throws IOException {
-        JdbcStorage storage = (JdbcStorage) getStorage();
-        ClassPathResource resource = new ClassPathResource("db/" + dbType + "/starwars_jpa-data.sql");
-        BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()));
-        StringBuilder sql = new StringBuilder();
-        for (String s = null; (s = br.readLine()) != null; ) {
-            sql.append(s);
-            if (s.trim().endsWith(";")) {
-                storage.getJdbcTemplate().update(sql.toString());
-                sql.setLength(0);
-            }
-        }
+    @GetMapping("/loadData")
+    public void loadData() throws IOException {
+        service.loadData();
     }
 }
