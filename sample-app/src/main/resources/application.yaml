@@ -30,7 +30,10 @@ server:
 
 
 database: postgresql
-  
+
+springdoc:
+  swagger-ui.tagsSorter: alpha
+
 spring:
   sql.init:
       mode: always
