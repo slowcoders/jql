@@ -25,7 +25,7 @@ public abstract class QSchema {
         this.isJPASchema = !JqlRepository.RawEntityType.isAssignableFrom(entityType);
     }
 
-    public abstract JqlStorage getSchemaLoader();
+    public abstract JqlStorage getStorage();
 
     public final boolean isJPARequired() { return this.isJPASchema; }
 
@@ -33,12 +33,16 @@ public abstract class QSchema {
 
     public Class<?> getIDType() { return Object.class; }
 
-    public String getTableName() {
+    public final String getTableName() {
         return this.tableName;
     }
 
-    public String getSimpleTableName() {
+    public final String getSimpleName() {
         return this.tableName.substring(this.tableName.indexOf('.') + 1);
+    }
+
+    public final String generateEntityClassName() {
+        return getStorage().toEntityClassName(this.getSimpleName(), true);
     }
 
 

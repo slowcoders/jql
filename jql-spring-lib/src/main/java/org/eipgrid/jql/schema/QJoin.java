@@ -124,13 +124,13 @@ public class QJoin {
                 }
             }
             // column 이 없으므로 타입을 이용하여 이름을 정한다.
-            name = first_fk.getSchema().getSimpleTableName();
+            name = first_fk.getSchema().getSimpleName();
         }
         else {
-            name = first_fk.getJoinedPrimaryColumn().getSchema().getSimpleTableName();
+            name = first_fk.getJoinedPrimaryColumn().getSchema().getSimpleName();
         }
 
-        name = baseSchema.getSchemaLoader().toEntityClassName(name, false);
+        name = baseSchema.getStorage().toEntityClassName(name, false);
         return name;
     }
 
@@ -156,7 +156,7 @@ public class QJoin {
             }
         }
         QSchema fk_schema = fk.getSchema();
-        js_key = fk_schema.getSchemaLoader().toLogicalAttributeName(fk_schema.getSimpleTableName(), js_key);
+        js_key = fk_schema.getStorage().toLogicalAttributeName(fk_schema.getSimpleName(), js_key);
         return js_key;
     }
 

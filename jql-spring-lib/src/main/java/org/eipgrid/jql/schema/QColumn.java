@@ -65,6 +65,6 @@ public abstract class QColumn {
         return physicalName.hashCode();
     }
 
-    public String toString() { return getSchema().getSimpleTableName() + "::" + this.getJsonKey()+ "<" + physicalName + ">"; }
+    public String toString() { return getSchema().getSimpleName() + "::" + this.getJsonKey()+ "<" + physicalName + ">"; }
 
 }

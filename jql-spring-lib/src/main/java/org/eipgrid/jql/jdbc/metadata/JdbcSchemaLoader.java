@@ -56,6 +56,8 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
     public final EntityManager getEntityManager() { return entityManager; }
 
+    public final String getDbType() { return dbType; }
+
     public final DataSource getDataSource() {
         return this.jdbc.getDataSource();
     }

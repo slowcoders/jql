@@ -116,7 +116,7 @@ public class JdbcColumn extends QColumn {
             sb.append(token).append('.');
         }
         QSchema schema = col.getSchema();
-        String name = schema.getSchemaLoader().toLogicalAttributeName(schema.getSimpleTableName(), col.getPhysicalName());
+        String name = schema.getStorage().toLogicalAttributeName(schema.getSimpleName(), col.getPhysicalName());
         if (this != col) {
             sb.append(name);
             name = sb.toString();

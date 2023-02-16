@@ -71,6 +71,9 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
 
     @Override
     public long count(JqlFilter filter) {
+        if (filter == null) {
+            filter = new JqlFilter(this.schema);
+        }
         String sqlCount = storage.createQueryGenerator().createCountQuery(filter);
         long count = jdbc.queryForObject(sqlCount, Long.class);
         return count;

@@ -31,7 +31,7 @@ public class JdbcSchema extends QSchema {
         this.schemaLoader = schemaLoader;
     }
 
-    public final JdbcSchemaLoader getSchemaLoader() {
+    public final JdbcSchemaLoader getStorage() {
         return schemaLoader;
     }
 
@@ -105,7 +105,7 @@ public class JdbcSchema extends QSchema {
 
         /* TODO multi-key, EmbeddedId, Embeddable, Element */
         boolean isMultiPKs = false && getPKColumns().size() > 1;
-        String className = this.suggestEntityClassName();
+        String className = this.generateEntityClassName();
         if (isMultiPKs) {
             sb.write("@IdClass(").write(className).writeln(".ID.class)");
         }
@@ -239,7 +239,7 @@ public class JdbcSchema extends QSchema {
             sb.decTab();
         }
         else if (join.getAssociativeJoin() != null) {
-            sb.write("@JoinTable(name = ").writeQuoted(join.getLinkedSchema().getSimpleTableName()).write(", ");
+            sb.write("@JoinTable(name = ").writeQuoted(join.getLinkedSchema().getSimpleName()).write(", ");
             String namespace = join.getLinkedSchema().getNamespace();
             if (namespace != null) {
                 sb.write("schema = ").writeQuoted(namespace).write(", ");
@@ -255,7 +255,7 @@ public class JdbcSchema extends QSchema {
             sb.decTab();
         }
 
-        String mappedType = ((JdbcSchema)mappedSchema).suggestEntityClassName();
+        String mappedType = ((JdbcSchema)mappedSchema).generateEntityClassName();
         sb.write("private ");
         if (!isArrayJoin) {
             sb.write(mappedType);
@@ -263,10 +263,6 @@ public class JdbcSchema extends QSchema {
             sb.write("List<").write(mappedType).write(">");
         }
         sb.write(" ").write(getJavaFieldName(join)).write(";\n\n");
-    }
-
-    protected String suggestEntityClassName() {
-        return schemaLoader.toEntityClassName(this.getSimpleTableName(), true);
     }
 
     private String getFKConstraintName(QColumn fk) {
@@ -281,7 +277,7 @@ public class JdbcSchema extends QSchema {
 
 
     private void dumpTableDefinition(SourceWriter sb) {
-        sb.write("@Table(name = ").writeQuoted(this.getSimpleTableName()).write(", ");
+        sb.write("@Table(name = ").writeQuoted(this.getSimpleName()).write(", ");
         String namespace = this.getNamespace();
         if (namespace != null) {
             sb.write("schema = ").writeQuoted(namespace).write(", ");

@@ -15,7 +15,7 @@ public class JsUtil {
 
     public static String createDDL(QSchema schema) {
         StringBuilder sb = new StringBuilder();
-        sb.append("const " + schema.getSimpleTableName() + "Schema_columns = [\n");
+        sb.append("const " + schema.getSimpleName() + "Schema_columns = [\n");
         for (QColumn col : schema.getPrimitiveColumns()) {
             dumpJSONSchema(sb, (JdbcColumn)col);
             sb.append(",\n");
@@ -23,13 +23,13 @@ public class JsUtil {
         sb.append("];\n");
 
         if (!schema.getEntityJoinMap().isEmpty() || !schema.getObjectColumns().isEmpty()) {
-            sb.append("\nconst " + schema.getSimpleTableName() + "Schema_external_entities = [\n");
+            sb.append("\nconst " + schema.getSimpleName() + "Schema_external_entities = [\n");
             for (QColumn column : schema.getObjectColumns()) {
                 sb.append("  jql.externalJoin(\"").append(column.getJsonKey()).append("\", Object,\n");
             }
             for (Map.Entry<String, QJoin> entry : schema.getEntityJoinMap().entrySet()) {
                 sb.append("  jql.externalJoin(\"").append(entry.getKey()).append("\", ");
-                sb.append(entry.getValue().getLinkedSchema().getSimpleTableName()).append("Schema, ");
+                sb.append(entry.getValue().getLinkedSchema().getSimpleName()).append("Schema, ");
                 sb.append(entry.getValue().hasUniqueTarget() ? "Object" : "Array").append("),\n");
             }
             sb.append("];\n");
@@ -65,7 +65,7 @@ public class JsUtil {
             QColumn joined_pk = jqlColumn.getJoinedPrimaryColumn();
             if (joined_pk == null) continue;
 
-            sb.append(schema.getSimpleTableName()).append("Schema.join(\"");
+            sb.append(schema.getSimpleName()).append("Schema.join(\"");
             sb.append(jqlColumn.getJsonKey()).append("\", ");
             sb.append(joined_pk.getSchema().getEntityType().getSimpleName()).append("Schema, \"");
             sb.append(joined_pk.getJsonKey()).append("\");\n");
@@ -87,7 +87,7 @@ public class JsUtil {
     private static String getColumnType(QColumn column) {
         QColumn joinedPK = column.getJoinedPrimaryColumn();
         if (joinedPK != null) {
-            String columnType = CaseConverter.toCamelCase(joinedPK.getSchema().getSimpleTableName(), true);
+            String columnType = CaseConverter.toCamelCase(joinedPK.getSchema().getSimpleName(), true);
             return columnType;
         }
 
@@ -137,7 +137,7 @@ public class JsUtil {
             sb.append("\n// reference properties //\n");
 
             for (QColumn col : schema.getReadableColumns()) {
-                if (JsType.of(col.getValueType()).isPrimitive()) {
+                if (!JsType.of(col.getValueType()).isPrimitive()) {
                     dumpColumnInfo(col, sb);
                 }
             }
@@ -147,7 +147,8 @@ public class JsUtil {
                 QSchema refSchema = join.getTargetSchema();
                 if (refSchema.hasOnlyForeignKeys()) continue;
                 int start = sb.length();
-                sb.append(join.getTargetSchema().getSimpleTableName());
+                QSchema targetSchema = join.getTargetSchema();
+                sb.append(join.getTargetSchema().generateEntityClassName());
                 if (!join.hasUniqueTarget()) sb.append("[]");
                 int type_len = sb.length() - start;
                 if (type_len >= filler.length()) {
