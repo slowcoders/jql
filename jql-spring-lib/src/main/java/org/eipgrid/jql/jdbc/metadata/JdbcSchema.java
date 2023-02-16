@@ -105,7 +105,7 @@ public class JdbcSchema extends QSchema {
 
         /* TODO multi-key, EmbeddedId, Embeddable, Element */
         boolean isMultiPKs = false && getPKColumns().size() > 1;
-        String className = schemaLoader.suggestEntityClassName(this);
+        String className = this.suggestEntityClassName();
         if (isMultiPKs) {
             sb.write("@IdClass(").write(className).writeln(".ID.class)");
         }
@@ -255,7 +255,7 @@ public class JdbcSchema extends QSchema {
             sb.decTab();
         }
 
-        String mappedType = schemaLoader.suggestEntityClassName(mappedSchema);
+        String mappedType = ((JdbcSchema)mappedSchema).suggestEntityClassName();
         sb.write("private ");
         if (!isArrayJoin) {
             sb.write(mappedType);
@@ -263,6 +263,10 @@ public class JdbcSchema extends QSchema {
             sb.write("List<").write(mappedType).write(">");
         }
         sb.write(" ").write(getJavaFieldName(join)).write(";\n\n");
+    }
+
+    protected String suggestEntityClassName() {
+        return schemaLoader.toEntityClassName(this.getSimpleTableName(), true);
     }
 
     private String getFKConstraintName(QColumn fk) {

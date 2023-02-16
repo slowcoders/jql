@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
+import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.util.ClassUtils;
 
 import java.lang.reflect.Field;
@@ -70,7 +71,7 @@ public class JdbcColumn extends QColumn {
     @Override
     public String getJsonKey() {
         if (fieldName == null) {
-            fieldName = this.resolveFieldName();
+            fieldName = resolveFieldName();
         }
         return fieldName;
     }
@@ -114,7 +115,8 @@ public class JdbcColumn extends QColumn {
             String token = QJoin.resolveForeignKeyPropertyName(col);
             sb.append(token).append('.');
         }
-        String name = schema.getSchemaLoader().toLogicalAttributeName(col.getPhysicalName());
+        QSchema schema = col.getSchema();
+        String name = schema.getSchemaLoader().toLogicalAttributeName(schema.getSimpleTableName(), col.getPhysicalName());
         if (this != col) {
             sb.append(name);
             name = sb.toString();

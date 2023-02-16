@@ -8,7 +8,7 @@ describe('JPA Source Generation Test', () => {
     { table: "Episode" },
     { table: "Starship" },
   ]) ('소스 비교 테스트', async ({table}) => {
-    const ref_file = `../src/main/java/org/eipgrid/jql/sample/jpa/starwars/model//${table}.java`;
+    const ref_file = `../src/main/java/org/eipgrid/jql/sample/jpa/starwars/model/${table}.java`;
     let src = fs.readFileSync(ref_file, {encoding:'utf8', flag:'r'});
     src = src.substring(src.indexOf('@'));
     src = src.replace(/\s/g, '');

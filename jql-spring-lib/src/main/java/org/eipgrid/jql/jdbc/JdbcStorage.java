@@ -17,7 +17,7 @@ public class JdbcStorage extends JdbcSchemaLoader {
     public JdbcStorage(DataSource dataSource,
                        TransactionTemplate transactionTemplate,
                        ObjectMapper objectMapper,
-                       EntityManager entityManager) throws Exception {
+                       EntityManager entityManager) {
         super(dataSource, transactionTemplate, objectMapper, entityManager);
     }
 

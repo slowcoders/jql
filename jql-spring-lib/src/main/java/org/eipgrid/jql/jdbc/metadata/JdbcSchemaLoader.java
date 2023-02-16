@@ -14,7 +14,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
-import javax.persistence.Table;
 import javax.persistence.metamodel.EntityType;
 import javax.sql.DataSource;
 import java.sql.*;
@@ -88,10 +87,6 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
 
     public String getDefaultNamespace() { return this.defaultNamespace; }
-
-    protected String suggestEntityClassName(QSchema schema) {
-        return CaseConverter.toCamelCase(schema.getSimpleTableName(), true);
-    }
 
 
     public QSchema loadSchema(Class entityType) {

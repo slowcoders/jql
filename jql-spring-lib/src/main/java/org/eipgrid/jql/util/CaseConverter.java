@@ -58,7 +58,7 @@ public interface CaseConverter {
         for (int index = 0; index < strLen;) {
             final int codePoint = str.codePointAt(index);
 
-            if (codePoint == '_') {
+            if (codePoint == '_' && index > 0) {
                 capitalizeNext = outOffset != 0;
                 index += Character.charCount(codePoint);
             } else if (capitalizeNext || outOffset == 0 && capitalizeFirstLetter) {

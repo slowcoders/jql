@@ -10,7 +10,7 @@ class EntityJoinHelper extends HashMap<QSchema, QJoin> {
     private String tableName;
     private HashSet<QSchema> conflictMappings = new HashSet<>();
     public EntityJoinHelper(JdbcSchema pkSchema) {
-        this.tableName = pkSchema.getSchemaLoader().suggestEntityClassName(pkSchema).toLowerCase();
+        this.tableName = pkSchema.suggestEntityClassName().toLowerCase();
     }
 
     public void validate() {
