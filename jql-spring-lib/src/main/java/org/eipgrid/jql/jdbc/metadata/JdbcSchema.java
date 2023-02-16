@@ -465,4 +465,8 @@ public class JdbcSchema extends QSchema {
             throw new RuntimeException(e);
         }
     }
+
+    /*package*/ final Map<String, QJoin> getEntityJoinMap_unsafe() {
+        return this.entityJoinMap;
+    }
 }

@@ -1,10 +1,10 @@
 package org.eipgrid.jql.jdbc.metadata;
 
+import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.schema.QJoin;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 class EntityJoinHelper extends HashMap<QSchema, QJoin> {
     private String tableName;
@@ -32,5 +32,33 @@ class EntityJoinHelper extends HashMap<QSchema, QJoin> {
             conflictMappings.add(schema);
         }
         return oldJoin;
+    }
+
+    public Map<String, QJoin> createJoinMap(JdbcSchema baseSchema) {
+        Map<String, QJoin> res = baseSchema.getEntityJoinMap_unsafe();
+        if (res != null) {
+            return res;
+        }
+
+        JdbcSchemaLoader.JoinMap joinMap = new JdbcSchemaLoader.JoinMap();
+        for (List<QColumn> fkColumns : baseSchema.getForeignKeyConstraints().values()) {
+            joinMap.add(baseSchema, fkColumns, null);
+        }
+        for (QJoin fkJoin : this.values()) {
+            List<QColumn> fkColumns = fkJoin.getForeignKeyColumns();
+            joinMap.add(baseSchema, fkColumns, null);
+
+            if (fkColumns.get(0).getSchema().hasOnlyForeignKeys()) {
+                JdbcSchema exSchema = (JdbcSchema) fkJoin.getBaseSchema();
+                Collection<String> fkConstraints = exSchema.getForeignKeyConstraints().keySet();
+                for (String fkConstraint : fkConstraints) {
+                    QJoin j2 = exSchema.getJoinByForeignKeyConstraints(fkConstraint);
+                    if (j2 != fkJoin) {// && linkedSchema != baseSchema) {
+                        joinMap.add(baseSchema, fkColumns, j2);
+                    }
+                }
+            }
+        }
+        return joinMap;
     }
 }

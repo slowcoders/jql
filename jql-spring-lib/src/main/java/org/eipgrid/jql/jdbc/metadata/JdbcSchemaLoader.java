@@ -29,8 +29,8 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
     private String dbType;
     private HashMap<String, Class<?>> ormTypeMap;
 
-    private final HashMap<Class<?>, QSchema> classToSchemaMap = new HashMap<>();
-    private final HashMap<String, QSchema> schemaMap = new HashMap<>();
+    private final HashMap<Class<?>, JdbcSchema> classToSchemaMap = new HashMap<>();
+    private final HashMap<String, JdbcSchema> schemaMap = new HashMap<>();
 
 
     protected JdbcSchemaLoader(DataSource dataSource, TransactionTemplate transactionTemplate, ObjectMapper objectMapper, EntityManager entityManager) {
@@ -119,23 +119,22 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
         final Class<?> ormType = ormType0;
         synchronized (schemaMap) {
-            QSchema schema = schemaMap.get(tablePath.getQualifiedName());
-            if (schema == null) {
-                schema = jdbc.execute(new ConnectionCallback<QSchema>() {
-                    @Override
-                    public QSchema doInConnection(Connection conn) throws SQLException, DataAccessException {
-                        return loadSchema(conn, tablePath, ormType);
-                    }
-                });
-            }
-
+            QSchema schema = jdbc.execute(new ConnectionCallback<QSchema>() {
+                @Override
+                public QSchema doInConnection(Connection conn) throws SQLException, DataAccessException {
+                    return loadSchema(conn, tablePath, ormType);
+                }
+            });
             return schema;
         }
     }
 
     private QSchema loadSchema(Connection conn, TablePath tablePath, Class<?> ormType) throws SQLException {
+        JdbcSchema schema = schemaMap.get(tablePath.getQualifiedName());
+        if (schema != null) return schema;
+
         String qname = tablePath.getQualifiedName();
-        JdbcSchema schema = new JdbcSchema(JdbcSchemaLoader.this, qname, ormType);
+        schema = new JdbcSchema(JdbcSchemaLoader.this, qname, ormType);
 
         ArrayList<String> primaryKeys = getPrimaryKeys(conn, tablePath);
         HashMap<String, ArrayList<String>> uniqueConstraints = getUniqueConstraints(conn, tablePath);
@@ -157,16 +156,18 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
     }
 
     protected Map<String, QJoin> loadJoinMap(QSchema schema) {
-        EntityJoinHelper exportedJoins = jdbc.execute(new ConnectionCallback<EntityJoinHelper>() {
-            @Override
-            public EntityJoinHelper doInConnection(Connection conn) throws SQLException, DataAccessException {
-                return getExternalJoins(conn, (JdbcSchema) schema);
-            }
-        });
-        return createJoinMap((JdbcSchema) schema, exportedJoins);
+        synchronized (schemaMap) {
+            EntityJoinHelper exportedJoins = jdbc.execute(new ConnectionCallback<EntityJoinHelper>() {
+                @Override
+                public EntityJoinHelper doInConnection(Connection conn) throws SQLException, DataAccessException {
+                    return getExternalJoins(conn, (JdbcSchema) schema);
+                }
+            });
+            return exportedJoins.createJoinMap((JdbcSchema) schema);
+        }
     }
 
-    private static class JoinMap extends HashMap<String, QJoin> {
+    static class JoinMap extends HashMap<String, QJoin> {
 
         public void add(JdbcSchema schema, List<QColumn> fkColumns, QJoin associateJoin) {
             QJoin join = new QJoin(schema, fkColumns, associateJoin);
@@ -177,28 +178,6 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
             old = this.put(join.getJsonKey(), join);
             assert(old == null);
         }
-    }
-    private HashMap<String, QJoin> createJoinMap(JdbcSchema baseSchema, EntityJoinHelper mappedJoins) {
-        JoinMap joinMap = new JoinMap();
-        for (List<QColumn> fkColumns : baseSchema.getForeignKeyConstraints().values()) {
-            joinMap.add(baseSchema, fkColumns, null);
-        }
-        for (QJoin fkJoin : mappedJoins.values()) {
-            List<QColumn> fkColumns = fkJoin.getForeignKeyColumns();
-            joinMap.add(baseSchema, fkColumns, null);
-
-            if (fkColumns.get(0).getSchema().hasOnlyForeignKeys()) {
-                JdbcSchema exSchema = (JdbcSchema) fkJoin.getBaseSchema();
-                Collection<String> fkConstraints = exSchema.getForeignKeyConstraints().keySet();
-                for (String fkConstraint : fkConstraints) {
-                    QJoin j2 = exSchema.getJoinByForeignKeyConstraints(fkConstraint);
-                    if (j2 != fkJoin) {// && linkedSchema != baseSchema) {
-                        joinMap.add(baseSchema, fkColumns, j2);
-                    }
-                }
-            }
-        }
-        return joinMap;
     }
 
     private ArrayList<String> getPrimaryKeys(Connection conn, TablePath tablePath) throws SQLException {
@@ -322,6 +301,9 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
             JoinData join = new JoinData(rs, this);
             // @TODO loadSchema with ORM type
             JdbcSchema fkSchema = (JdbcSchema) loadSchema(join.fkTableQName);
+            if (fkSchema.getEntityJoinMap_unsafe() == null) {
+                getExternalJoins(conn, fkSchema);
+            }
             QJoin fkJoin = fkSchema.getJoinByForeignKeyConstraints(join.fk_name);
             assert(fkJoin != null);
             joins.put(fkSchema, fkJoin);
