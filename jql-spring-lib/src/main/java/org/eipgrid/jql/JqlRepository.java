@@ -8,7 +8,7 @@ import org.eipgrid.jql.schema.QSchema;
 import java.io.IOException;
 import java.util.*;
 
-public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
+public abstract class JqlRepository<ENTITY, ID> implements JqlEntitySet<ENTITY, ID> {
 
     protected final QSchema schema;
     protected JqlParser jqlParser;
@@ -37,6 +37,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
         return jqlParser.parse(this.schema, filter);
     }
 
+
     public final boolean hasGeneratedId() {
         return schema.hasGeneratedId();
     }
@@ -46,11 +47,12 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
         query.extraInfo = extraInfo;
     }
 
-    public abstract <T> List<T> find(JqlQuery query, Class<T> entityType);
-
-    public List<ENTITY> find(JqlQuery query) { return find(query, getEntityType()); }
 
     public List<ENTITY> findAll() { return find(JqlQuery.of(this, null, null), getEntityType()); }
+
+
+    public abstract <T> List<T> find(JqlQuery query, Class<T> entityType);
+    public List<ENTITY> find(JqlQuery query) { return find(query, getEntityType()); }
 
     public List<Map<String, Object>> find_raw(JqlQuery query) { return (List)find(query, RawEntityType); }
 
@@ -60,11 +62,11 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
         return res.size() == 0 ? null : res.get(0);
     }
 
+    public Map<String, Object> find_raw(ID id, JqlSelect select) { return find(id, select, RawEntityType); }
+
     public ENTITY find(ID id, JqlSelect select) { return find(id, select, getEntityType()); }
 
     public ENTITY find(ID id) { return find(id, null); }
-
-    public Map<String, Object> find_raw(ID id, JqlSelect select) { return find(id, select, RawEntityType); }
 
     public Map<String, Object> find_raw(ID id) { return find_raw(id, null); }
 
@@ -81,6 +83,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlTable<ID> {
     public ENTITY get(ID id) { return get(id, null); }
 
     public Map<String, Object> get_raw(ID id, JqlSelect select) { return get(id, select, RawEntityType); }
+
     public Map<String, Object> get_raw(ID id) { return get_raw(id, null); }
 
 

@@ -14,10 +14,11 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
+public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
 
     protected final JdbcStorage storage;
     private final JdbcTemplate jdbc;
@@ -25,7 +26,7 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
 
     private static final ArrayRowMapper arrayMapper = new ArrayRowMapper();
 
-    protected JDBCRepositoryBase(JdbcStorage storage, QSchema schema) {
+    protected JdbcTable(JdbcStorage storage, QSchema schema) {
         super(schema, storage.getObjectMapper());
         this.storage = storage;
         this.jdbc = storage.getJdbcTemplate();
@@ -64,7 +65,7 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
     }
 
     @Override
-    public List<?> find(JqlQuery query, OutputFormat outputType) {
+    public List<ENTITY> find(JqlQuery query, OutputFormat outputType) {
         return find(query);
     }
 
@@ -89,6 +90,10 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         return batch.getEntityIDs();
     }
 
+    public ENTITY insert(Map<String, Object> properties) throws IOException  {
+        ID id = insert(Collections.singletonList(properties)).get(0);
+        return get(id);
+    }
 
     @Override
     public void update(Collection<ID> idList, Map<String, Object> updateSet) throws IOException {
@@ -116,6 +121,9 @@ public class JDBCRepositoryBase<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         // do nothing.
     }
 
+    public ID getEntityId(ENTITY entity) {
+        return schema.getEnityId(entity);
+    }
 
     public ID convertId(Object v) {
         /** 참고. 2023.01.31

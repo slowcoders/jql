@@ -18,7 +18,7 @@ import java.util.*;
 @Getter
 public class JqlQuery {
 
-    private final JqlTable<?> table;
+    private final JqlEntitySet repository;
     private final JqlSelect select;
     private final JqlFilter filter;
 
@@ -30,8 +30,8 @@ public class JqlQuery {
     /*package*/ String executedQuery;
     /*package*/ Object extraInfo;
 
-    protected JqlQuery(JqlTable<?> table, JqlSelect select, JqlFilter filter) {
-        this.table = table;
+    protected JqlQuery(JqlEntitySet repository, JqlSelect select, JqlFilter filter) {
+        this.repository = repository;
         if (select == null) {
             select = JqlSelect.Auto;
         }
@@ -39,20 +39,20 @@ public class JqlQuery {
         this.filter = filter;
     }
 
-    private JqlQuery(JqlTable<?> table, JqlSelect select, Map<String, Object> filter) {
-        this(table, select, table.createFilter(filter));
+    private JqlQuery(JqlEntitySet repository, JqlSelect select, Map<String, Object> filter) {
+        this(repository, select, repository.createFilter(filter));
     }
 
-    public static JqlQuery of(JqlTable<?> table, JqlSelect select, Sort sort, int offset, int limit, Map<String, Object> filter) {
-        JqlQuery query = new JqlQuery(table, select, filter);
+    public static JqlQuery of(JqlEntitySet repository, JqlSelect select, Sort sort, int offset, int limit, Map<String, Object> filter) {
+        JqlQuery query = new JqlQuery(repository, select, filter);
         query.sort = sort;
         query.offset = offset;
         query.limit = limit;
         return query;
     }
 
-    public static JqlQuery of(JqlTable<?> table, JqlSelect select, Map<String, Object> filter) {
-        return new JqlQuery(table, select, filter);
+    public static JqlQuery of(JqlEntitySet repository, JqlSelect select, Map<String, Object> filter) {
+        return new JqlQuery(repository, select, filter);
     }
     
     public boolean needPagination() {
@@ -60,7 +60,7 @@ public class JqlQuery {
     }
 
     public Response execute() {
-        List<?> result = table.find(this, null);
+        List<?> result = repository.find(this, OutputFormat.Object);
         Response resp = new Response(result, filter);
         if (needPagination()) {
             resp.setProperty("totalElements", this.count());
@@ -69,7 +69,7 @@ public class JqlQuery {
     }
 
     public long count() {
-        return table.count(filter);
+        return repository.count(filter);
     }
 
     @Data
@@ -82,7 +82,7 @@ public class JqlQuery {
         @Schema(implementation = Object.class)
         private HashMap filter;
 
-        public JqlQuery buildQuery(JqlTable<?> table) {
+        public JqlQuery buildQuery(JqlEntitySet table) {
             JqlSelect _select = JqlSelect.of(select);
             Sort _sort = parseSort(sort);
             int _limit = limit == null ? 0 : limit;

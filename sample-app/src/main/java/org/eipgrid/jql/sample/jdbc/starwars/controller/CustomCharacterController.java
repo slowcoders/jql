@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.JqlStorage;
-import org.eipgrid.jql.JqlTableController;
+import org.eipgrid.jql.JqlEntitySetController;
 import org.eipgrid.jql.util.KVEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jql/starwars/character")
-public class CustomCharacterController extends JqlTableController.CRUD<Integer> implements JqlTableController.ListAll<Integer> {
+public class CustomCharacterController extends JqlEntitySetController.CRUD<Integer> implements JqlEntitySetController.ListAll<Integer> {
 
     public CustomCharacterController(JqlStorage storage) {
         super(storage.getRepository("starwars.character"));
@@ -27,7 +27,7 @@ public class CustomCharacterController extends JqlTableController.CRUD<Integer> 
     @Override
     public JqlQuery.Response find(@Schema(example = "{ \"select\": \"\", \"sort\": \"\", \"page\": 0, \"limit\": 0, \"filter\": { } }")
                                   @RequestBody JqlQuery.Request request) {
-        JqlQuery query = request.buildQuery(getTable());
+        JqlQuery query = request.buildQuery(getEntitySet());
         JqlQuery.Response resp = query.execute();
         resp.setProperty("lastExecutedSql", query.getExecutedQuery());
         return resp;

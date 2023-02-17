@@ -1,7 +1,7 @@
 package org.eipgrid.jql.jdbc.timescale;
 
 import org.eipgrid.jql.jdbc.JdbcStorage;
-import org.eipgrid.jql.jpa.JPARepositoryBase;
+import org.eipgrid.jql.jpa.JpaTable;
 import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
@@ -11,11 +11,11 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.HashMap;
 
-public abstract class TSDBRepositoryBase<ENTITY, ID> extends JPARepositoryBase<ENTITY, ID> {
+public abstract class TSDBRepository<ENTITY, ID> extends JpaTable<ENTITY, ID> {
 
     private final String timeKeyColumnName;
 
-    public TSDBRepositoryBase(JdbcStorage storage, Class<ENTITY> entityType, Class<ID> idType, String timeKeyColumnName) {
+    public TSDBRepository(JdbcStorage storage, Class<ENTITY> entityType, Class<ID> idType, String timeKeyColumnName) {
         super(storage, entityType);
         this.timeKeyColumnName = timeKeyColumnName;
 

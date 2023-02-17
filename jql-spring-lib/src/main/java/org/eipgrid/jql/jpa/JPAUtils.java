@@ -8,7 +8,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface JPAUtils {
+public interface JpaUtils {
 
     static List<Field> findIdFields(Class<?> clazz) {
         ArrayList<Field> idFields = new ArrayList<Field>() {

@@ -10,22 +10,21 @@ import org.springframework.web.client.HttpServerErrorException;
 import javax.transaction.Transactional;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public interface JqlTableController<ID> {
+public interface JqlEntitySetController<ID> {
 
-    JqlTable<ID> getTable();
+    JqlEntitySet<?, ID> getEntitySet();
 
-    class Search<ID> implements JqlTableController<ID> {
-        private final JqlTable<ID> table;
+    class Search<ID> implements JqlEntitySetController<ID> {
+        private final JqlEntitySet<?, ID> entities;
 
-        public Search(JqlTable<ID> table) {
-            this.table = table;
+        public Search(JqlEntitySet<?, ID> entities) {
+            this.entities = entities;
         }
 
-        public JqlTable<ID> getTable() {
-            return table;
+        public JqlEntitySet<?, ID> getEntitySet() {
+            return entities;
         }
 
         @GetMapping(path = "/{id}")
@@ -35,7 +34,7 @@ public interface JqlTableController<ID> {
         public Object get(@PathVariable("id") ID id,
                           @RequestParam(value = "select", required = false) String select$) {
             JqlSelect select = JqlSelect.of(select$);
-            Object entity = getTable().find(id, select);
+            Object entity = getEntitySet().find(id, select);
             if (entity == null) {
                 throw new HttpServerErrorException("Entity(" + id + ") is not found", HttpStatus.NOT_FOUND, null, null, null, null);
             }
@@ -57,7 +56,7 @@ public interface JqlTableController<ID> {
         @ResponseBody
         public JqlQuery.Response find(@Schema(example = "{ \"select\": \"\", \"sort\": \"\", \"page\": 0, \"limit\": 0, \"filter\": { } }")
                                       @RequestBody JqlQuery.Request request) {
-            return request.buildQuery(getTable()).execute();
+            return request.buildQuery(getEntitySet()).execute();
         }
 
         @PostMapping(path = "/count")
@@ -66,20 +65,12 @@ public interface JqlTableController<ID> {
         @ResponseBody
         public long count(@Schema(implementation = Object.class)
                           @RequestBody() HashMap<String, Object> jsFilter) {
-            long count = getTable().count(getTable().createFilter(jsFilter));
+            long count = getEntitySet().count(getEntitySet().createFilter(jsFilter));
             return count;
-        }
-
-
-        @PostMapping(path = "/clear-cache")
-        @ResponseBody
-        @Operation(summary = "Cache 비우기")
-        public void clearCache() {
-            getTable().clearEntityCaches();
         }
     }
 
-    interface ListAll<ID> extends JqlTableController<ID> {
+    interface ListAll<ID> extends JqlEntitySetController<ID> {
 
         @GetMapping(path = "")
         @Operation(summary = "전체 목록")
@@ -87,12 +78,12 @@ public interface JqlTableController<ID> {
         @ResponseBody
         default JqlQuery.Response list(@RequestParam(value = "select", required = false) String select$) throws Exception {
             JqlSelect select = JqlSelect.of(select$);
-            return JqlQuery.of(getTable(), select, null).execute();
+            return JqlQuery.of(getEntitySet(), select, null).execute();
         }
     }
 
 
-    interface Insert<ID> extends JqlTableController<ID> {
+    interface Insert<ID> extends JqlEntitySetController<ID> {
 
         @PutMapping(path = "/", consumes = {MediaType.APPLICATION_JSON_VALUE})
         @Operation(summary = "엔터티 추가")
@@ -100,13 +91,13 @@ public interface JqlTableController<ID> {
         @ResponseBody
         default <ENTITY> ENTITY add(@Schema(implementation = Object.class)
                        @RequestBody Map<String, Object> properties) throws Exception {
-            JqlTable<ID> table = getTable();
-            ID id = table.insert(properties);
-            return (ENTITY)table.find(id);
+            JqlEntitySet<?, ID> table = getEntitySet();
+            ENTITY entity = (ENTITY)table.insert(properties);
+            return entity;
         }
     }
 
-    interface Update<ID> extends JqlTableController<ID> {
+    interface Update<ID> extends JqlEntitySetController<ID> {
 
         @PatchMapping(path = "/{idList}", consumes = {MediaType.APPLICATION_JSON_VALUE})
         @Operation(summary = "엔터티 내용 변경")
@@ -115,19 +106,19 @@ public interface JqlTableController<ID> {
         default <ENTITY> Collection<ENTITY> update(
                 @Schema(type = "string", required = true) @PathVariable("idList") Collection<ID> idList,
                 @RequestBody Map<String, Object> properties) throws Exception {
-            JqlTable<ID> table = getTable();
+            JqlEntitySet<?, ID> table = getEntitySet();
             table.update(idList, properties);
-            return (Collection<ENTITY>)table.find(idList);
+            return (Collection<ENTITY>) table.find(idList);
         }
     }
 
-    interface Delete<ID> extends JqlTableController<ID> {
+    interface Delete<ID> extends JqlEntitySetController<ID> {
         @DeleteMapping("/{idList}")
         @ResponseBody
         @Operation(summary = "엔터티 삭제")
         @Transactional
         default Collection<ID> delete(@PathVariable("idList") Collection<ID> idList) {
-            getTable().delete(idList);
+            getEntitySet().delete(idList);
             return idList;
         }
     }
@@ -136,23 +127,23 @@ public interface JqlTableController<ID> {
     /****************************************************************
      * Form Control API set
      */
-    interface InsertForm<FORM, ID> extends JqlTableController<ID> {
+    interface InsertForm<FORM, ID> extends JqlEntitySetController<ID> {
 
         @PostMapping(path = "/", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
         @ResponseBody
         @Operation(summary = "엔터티 추가")
         @Transactional
-        default ID add_form(@ModelAttribute FORM formData) throws Exception {
+        default <ENTITY> ENTITY add_form(@ModelAttribute FORM formData) throws Exception {
             Map<String, Object> dataSet = convertFormDataToMap(formData);
-            return getTable().insert(dataSet);
+            return (ENTITY) getEntitySet().insert(dataSet);
         }
 
         Map<String, Object> convertFormDataToMap(FORM formData);
     }
 
     class CRUD<ID> extends Search<ID> implements Insert<ID>, Update<ID>, Delete<ID> {
-        public CRUD(JqlTable<ID> table) {
-            super(table);
+        public CRUD(JqlEntitySet<?, ID> repository) {
+            super(repository);
         }
     }
 

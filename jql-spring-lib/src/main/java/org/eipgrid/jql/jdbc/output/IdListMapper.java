@@ -1,6 +1,6 @@
 package org.eipgrid.jql.jdbc.output;
 
-import org.eipgrid.jql.jdbc.JDBCRepositoryBase;
+import org.eipgrid.jql.jdbc.JdbcTable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IdListMapper<ID> implements ResultSetExtractor<List<ID>> {
-    private final JDBCRepositoryBase<?,ID> repository;
+    private final JdbcTable<?,ID> repository;
 
-    public IdListMapper(JDBCRepositoryBase<?, ID> repository) {
+    public IdListMapper(JdbcTable<?, ID> repository) {
         this.repository = repository;
     }
 

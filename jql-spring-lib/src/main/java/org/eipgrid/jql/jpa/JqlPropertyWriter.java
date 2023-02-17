@@ -11,7 +11,7 @@ import org.eipgrid.jql.schema.QResultMapping;
 import java.util.Stack;
 
 public class JqlPropertyWriter extends BeanPropertyWriter {
-    private static final String JQL_STACK_KEY = "jql-entity-stack";
+//    private static final String JQL_STACK_KEY = "jql-entity-stack";
     private static final String JQL_RESULT_MAPPING_KEY = "jql-result-mapping";
     private final BeanPropertyWriter writer;
 
@@ -27,14 +27,14 @@ public class JqlPropertyWriter extends BeanPropertyWriter {
     }
 
 
-    private Stack<Object> getStack(SerializerProvider provider) {
-        Stack<Object> stack = (Stack<Object>) provider.getAttribute(JQL_STACK_KEY);
-        if (stack == null) {
-            stack = new Stack<>();
-            provider.setAttribute(JQL_STACK_KEY, stack);
-        }
-        return stack;
-    }
+//    private Stack<Object> getStack(SerializerProvider provider) {
+//        Stack<Object> stack = (Stack<Object>) provider.getAttribute(JQL_STACK_KEY);
+//        if (stack == null) {
+//            stack = new Stack<>();
+//            provider.setAttribute(JQL_STACK_KEY, stack);
+//        }
+//        return stack;
+//    }
 
     @Override
     public void serializeAsField(Object bean,
@@ -68,13 +68,13 @@ public class JqlPropertyWriter extends BeanPropertyWriter {
             }
         }
         Object value = gen.getCurrentValue();
-        Stack stack = getStack(prov);
-        if (stack.contains(value)) {
-            return;
-        }
-        stack.push(value);
+//        Stack stack = getStack(prov);
+//        if (stack.contains(value)) {
+//            return;
+//        }
+//        stack.push(value);
         super.serializeAsField(bean, gen, prov);
-        stack.pop();
+//        stack.pop();
     }
 
 

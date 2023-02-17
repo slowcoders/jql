@@ -5,19 +5,20 @@ import org.eipgrid.jql.parser.JqlFilter;
 import java.io.IOException;
 import java.util.*;
 
-public interface JqlTable<ID> {
+public interface JqlEntitySet<ENTITY, ID> {
 
     JqlFilter createFilter(Map<String, Object> filter);
 
-    List<?> find(JqlQuery query, OutputFormat outputType);
+    ID getEntityId(ENTITY entity);
 
-    List<?> find(Collection<ID> idList);
-    default Object find(ID id, JqlSelect select) {
-        List<?> res = find(Collections.singletonList(id));
+    List<ENTITY> find(JqlQuery query, OutputFormat outputType);
+
+    List<ENTITY> find(Collection<ID> idList);
+    default ENTITY find(ID id, JqlSelect select) {
+        List<ENTITY> res = find(Collections.singletonList(id));
         return res.size() > 0 ? res.get(0) : null;
     }
-
-    default Object find(ID id) {
+    default ENTITY find(ID id) {
         return find(id, null);
     }
 
@@ -25,9 +26,7 @@ public interface JqlTable<ID> {
 
 
     List<ID> insert(Collection<Map<String, Object>> entities) throws IOException;
-    default ID insert(Map<String, Object> properties) throws IOException {
-        return insert(Collections.singletonList(properties)).get(0);
-    }
+    ENTITY insert(Map<String, Object> properties) throws IOException;
 
     void update(Collection<ID> idList, Map<String, Object> properties) throws IOException;
     default void update(ID id, Map<String, Object> updateSet) throws IOException {
@@ -39,6 +38,4 @@ public interface JqlTable<ID> {
         delete(Collections.singletonList(id));
     }
 
-
-    default void clearEntityCaches() {}
 }

@@ -57,7 +57,7 @@ public class JPAEntitySerializer extends StdSerializer<Object> {
     private void serializeIdentifier(Object entity, JsonGenerator gen, SerializerProvider provider)
             throws IOException {
         HashMap<String, Object> map = new HashMap<String, Object>();
-        List<Field> idFields = JPAUtils.findIdFields(entity.getClass());
+        List<Field> idFields = JpaUtils.findIdFields(entity.getClass());
         gen.writeStartObject();
         for (Field f : idFields) {
             String name = f.getName();

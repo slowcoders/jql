@@ -2,7 +2,7 @@ package org.eipgrid.jql.jdbc.storage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.eipgrid.jql.JqlRepository;
-import org.eipgrid.jql.jpa.JPAUtils;
+import org.eipgrid.jql.jpa.JpaUtils;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
@@ -44,7 +44,7 @@ public class JdbcSchema extends QSchema {
 
         if (!JqlRepository.RawEntityType.isAssignableFrom(ormType)) {
             HashMap<String, Field> jpaColumns = new HashMap<>();
-            for (Field f: JPAUtils.getColumnFields(ormType)) {
+            for (Field f: JpaUtils.getColumnFields(ormType)) {
                 String name = resolvePhysicalName(f);
                 jpaColumns.put(name.toLowerCase(), f);
             }

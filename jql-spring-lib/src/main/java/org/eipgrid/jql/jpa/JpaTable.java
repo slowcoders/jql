@@ -1,7 +1,7 @@
 package org.eipgrid.jql.jpa;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eipgrid.jql.jdbc.JDBCRepositoryBase;
+import org.eipgrid.jql.jdbc.JdbcTable;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.jdbc.JdbcStorage;
 
@@ -10,23 +10,26 @@ import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.*;
 
-public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID> { 
+public class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
 
     private final HashMap<ID, Object> associatedCache = new HashMap<>();
     private static JqlStorage storageInstance;
 
-    public JPARepositoryBase(JdbcStorage storage, Class<ENTITY> entityType) {
+    public JpaTable(JdbcStorage storage, Class<ENTITY> entityType) {
         super(storage, storage.loadSchema(entityType));
         if (storageInstance == null) {
             storageInstance = storage;
         }
+        else if (storageInstance != storage) {
+            throw new RuntimeException("OrmRepositories must share single storage");
+        }
     }
 
-    public ID insert(Map<String, Object> dataSet) throws IOException {
+    public ENTITY insert(Map<String, Object> dataSet) throws IOException {
         ObjectMapper converter = storage.getObjectMapper();
         ENTITY entity = converter.convertValue(dataSet, getEntityType());
         ENTITY newEntity = this.insertOrUpdate(entity);
-        return getEntityId(newEntity);
+        return newEntity;
     }
 
     public List<ID> insert(Collection<Map<String, Object>> entities) {
@@ -153,8 +156,8 @@ public class JPARepositoryBase<ENTITY, ID> extends JDBCRepositoryBase<ENTITY, ID
 
 
     public static class Util {
-        public static <T, ID> JPARepositoryBase<T, ID> findRepository(Class<T> entityType) {
-            return (JPARepositoryBase<T, ID>) storageInstance.getRepository(entityType);
+        public static <T, ID> JpaTable<T, ID> findRepository(Class<T> entityType) {
+            return (JpaTable<T, ID>) storageInstance.getRepository(entityType);
         }
     }
 }
