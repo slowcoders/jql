@@ -16,7 +16,7 @@ public class JsUtil {
     public static String createDDL(QSchema schema) {
         StringBuilder sb = new StringBuilder();
         sb.append("const " + schema.getSimpleName() + "Schema_columns = [\n");
-        for (QColumn col : schema.getPrimitiveColumns()) {
+        for (QColumn col : schema.getLeafColumns()) {
             dumpJSONSchema(sb, (JdbcColumn)col);
             sb.append(",\n");
         }
@@ -125,7 +125,7 @@ public class JsUtil {
         StringBuilder sb = new StringBuilder();
         sb.append("Type").append(filler.substring("Type".length())).append("Key(physical_column_name)\n");
         sb.append("--------------------------------------------------\n");
-        List<QColumn> primitiveColumns = schema.getPrimitiveColumns();
+        List<QColumn> primitiveColumns = schema.getLeafColumns();
         for (QColumn col : primitiveColumns) {
             dumpColumnInfo(col, sb);
         }

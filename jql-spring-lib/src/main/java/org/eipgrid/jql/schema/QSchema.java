@@ -14,7 +14,7 @@ public abstract class QSchema {
 
     private List<QColumn> pkColumns;
     private List<QColumn> allColumns;
-    private List<QColumn> primitiveColumns;
+    private List<QColumn> leafColumns;
     private List<QColumn> objectColumns;
     private List<QColumn> writableColumns;
     private Map<String, QColumn> columnMap = new HashMap<>();
@@ -50,8 +50,8 @@ public abstract class QSchema {
         return this.allColumns;
     }
 
-    public List<QColumn> getPrimitiveColumns() {
-        return this.primitiveColumns;
+    public List<QColumn> getLeafColumns() {
+        return this.leafColumns;
     }
 
     public List<QColumn> getObjectColumns() {
@@ -123,7 +123,7 @@ public abstract class QSchema {
         allColumns.addAll(0, pkColumns);
         this.allColumns = Collections.unmodifiableList(allColumns);
         this.writableColumns = Collections.unmodifiableList(writableColumns);
-        this.primitiveColumns = Collections.unmodifiableList(primitiveColumns);
+        this.leafColumns = Collections.unmodifiableList(primitiveColumns);
         this.objectColumns = objectColumns.size() == 0 ? Collections.EMPTY_LIST : Collections.unmodifiableList(objectColumns);
         this.initJsonKeys(ormType);
         if (pkColumns.size() == 0) {

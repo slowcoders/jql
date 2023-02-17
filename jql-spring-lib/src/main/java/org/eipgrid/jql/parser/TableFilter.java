@@ -88,7 +88,7 @@ class TableFilter extends EntityFilter implements QResultMapping {
                 this.selectedColumns = Collections.EMPTY_LIST;
             }
             else {
-                this.selectedColumns = schema.getPrimitiveColumns();
+                this.selectedColumns = schema.getLeafColumns();
                 if (this.schema.getObjectColumns().size() > 0) {
                     for (Map.Entry<String, EntityFilter> entry : this.subFilters.entrySet()) {
                         EntityFilter filter = entry.getValue();
@@ -145,7 +145,7 @@ class TableFilter extends EntityFilter implements QResultMapping {
 
     protected void addSelectedColumn(String key) {
         if (key.equals("*")) {
-            this.selectedColumns = schema.getPrimitiveColumns();
+            this.selectedColumns = schema.getLeafColumns();
         }
         else if (key.equals("0")) {
             if (this.selectedColumns == null) {

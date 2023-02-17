@@ -1,13 +1,12 @@
 # Json Query Language (JQL)
 
 ## What is JQL
-* GraphQL-like property selection
-* JSON based search filter
-* Rest API for CRUD + Search  
-* Simple query language that frond-end developers can easily use.
+* Hierarchical property selection like GraphQL
+* Simple search filter with Json syntax
 
 ## JQL for JDBC
-* Automatic repository creation and generate join query on demand.
+* Automatic repository creation
+* Automatic join query generation.
 * Supports JPA EntityManager.
 
 

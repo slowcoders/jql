@@ -8,8 +8,6 @@
       <div class="details">
         JQL 은 DB 의 metadata 를 분석하여 FK->PK Join 관계를 자동 분석하여 처리한다.<br>
         Property key 를 '.' 기호로 연결하거나, 비교값 위치에 Object {} 또는 Object Array [ {} ] 를 사용하여 Joined Query 를 작성할 수 있다.<p/>
-        select 값을 명시하지 않으면, filter 노드에 포함된 entity 들이 검색 결과에 자동으로 포함된다.<p/>
-        Joined entity 의 특정 프로퍼티들만을 선택하고자 하는 경우, starship.&lt;name, length&gt; 와 대상을 명시할 수 있다.
       </div>
     </template>
   </LessonView>

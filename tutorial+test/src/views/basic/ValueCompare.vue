@@ -9,7 +9,7 @@
         JQL 은 아래의 형태로 비교 연산식을 표현한다.<br>
         <b>"propertyKey@연산자" : 비교값</b><p/>
         "@연산자" 부분이 생략되면 equals 연산을 수행한다.<br>
-        아래 예제의 Comment 를 하나씩 해제하면서 검색 결과의 차이를 알아본다.</div>
+      </div>
     </template>
   </LessonView>
 </template>
@@ -20,6 +20,7 @@ import LessonView from "@/components/LessonView";
 const sample_code = `
 const jql_select = AUTO;
 
+/* 아래의 주석을 한 줄씩 해제하면서 검색 결과의 차이를 비교해 보십시오. */
 const jql_filter = {
   // "id": 1001
   // "id@not": 1001

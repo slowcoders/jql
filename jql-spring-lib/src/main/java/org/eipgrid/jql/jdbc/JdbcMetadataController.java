@@ -36,7 +36,7 @@ public abstract class JdbcMetadataController {
                                 @PathVariable("table") String tableName) throws Exception {
         QSchema schema = getSchema(namespace, tableName);
         ArrayList<String> columns = new ArrayList<>();
-        for (QColumn column : schema.getPrimitiveColumns()) {
+        for (QColumn column : schema.getLeafColumns()) {
             columns.add(column.getJsonKey());
         }
         ArrayList<String> refs = new ArrayList<>();

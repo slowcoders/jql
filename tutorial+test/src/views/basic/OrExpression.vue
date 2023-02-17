@@ -58,6 +58,7 @@ const too_small_or_too_tall__AND__too_light_or_too_heavy__short_expression = {
     "mass@not between": [40, 120],
 }
 
+/* 아래의 주석을 한 줄씩 번갈아 해제하면서 검색 결과의 차이를 비교해 보십시오. */
 const jql_filter = too_small_or_too_tall;
 // const jql_filter = too_light_or_too_heavy;
 // const jql_filter = too_small_or_too_heavy;

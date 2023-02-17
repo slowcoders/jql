@@ -25,7 +25,9 @@ const jql_2 = {
   "metadata": { "memo" : { "shoeSize@ge" : 270 } }
 }
 
+/* 아래의 주석을 한 줄씩 번갈아 해제하면서 검색 결과의 차이를 비교해 보십시오. */
 const jql_filter = jql_1;
+// const jql_filter = jql_2;
 `
 
 export default {

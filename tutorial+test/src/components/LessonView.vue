@@ -10,14 +10,14 @@
                          @input="onTableChanged()">
           </b-form-select>
         </td><td>
-          <label class="form-label">Table: </label>
-        </td><td class="input-column">
-          <b-form-select v-model="selectedTable"
-                         :options="tableNames"
-                         :disabled="!showSchemaInfo"
-                         @input="onTableChanged()">
-          </b-form-select>
-        </td><td>
+<!--          <label class="form-label">Table: </label>-->
+<!--        </td><td class="input-column">-->
+<!--          <b-form-select v-model="selectedTable"-->
+<!--                         :options="tableNames"-->
+<!--                         :disabled="!showSchemaInfo"-->
+<!--                         @input="onTableChanged()">-->
+<!--          </b-form-select>-->
+<!--        </td><td>-->
           <label class="form-label">Select: </label>
         </td><td class="input-column">
           <b-dropdown text="Columns" ref="dropDown">
@@ -195,7 +195,7 @@ const dbTable = '${vm.selectedTable}'
 const AUTO = ""
 ${vm.js_code}
 const jql = {
-  select: jql_select,\
+  select: ${vm.selectedColumns?.length > 0 ? '"' + vm.selectedColumns + '"' : 'jql_select'},\
   ${vm.first_sort?.length > 0 ? '\n  sort: "' + vm.first_sort + '", ' : ''}\
   ${vm.limit > 0 ? '\n  limit: ' + vm.limit + ', ' : ''}
   filter: jql_filter
