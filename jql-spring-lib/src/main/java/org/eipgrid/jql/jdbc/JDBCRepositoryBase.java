@@ -2,13 +2,13 @@ package org.eipgrid.jql.jdbc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.*;
+import org.eipgrid.jql.jdbc.storage.BatchUpsert;
 import org.eipgrid.jql.jdbc.output.ArrayRowMapper;
 import org.eipgrid.jql.jdbc.output.IdListMapper;
 import org.eipgrid.jql.jdbc.output.JsonRowMapper;
 import org.eipgrid.jql.parser.JqlFilter;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 

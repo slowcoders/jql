@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc.metadata;
+package org.eipgrid.jql.jdbc.storage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.eipgrid.jql.JqlRepository;
@@ -25,6 +25,7 @@ public class JdbcSchema extends QSchema {
     private Map<String, QJoin> entityJoinMap;
     private ArrayList<QColumn> unresolvedJpaColumns;
     private Class<?> idType;
+    private JoinMap importedByFkJoinMap;
 
     protected JdbcSchema(JdbcSchemaLoader schemaLoader, String tableName, Class<?> ormType) {
         super(tableName, ormType);
@@ -62,6 +63,10 @@ public class JdbcSchema extends QSchema {
             }
         }
         super.init(columns, ormType);
+        this.importedByFkJoinMap = new JoinMap();
+        for (List<QColumn> fkColumns : this.fkConstraints.values()) {
+            importedByFkJoinMap.add(this, fkColumns, null);
+        }
     }
 
     protected void markAllColumnsToPK(List<QColumn> pkColumns) {
@@ -70,12 +75,22 @@ public class JdbcSchema extends QSchema {
         }
     }
 
+    public final Map<String, QJoin> getEntityJoinMap() {
+        return getEntityJoinMap(true);
+    }
 
-    public synchronized Map<String, QJoin> getEntityJoinMap() {
-        if (this.entityJoinMap == null) {
-            this.entityJoinMap = schemaLoader.loadJoinMap(this);
+    protected Map<String, QJoin> getEntityJoinMap(boolean loadNow) {
+        if (loadNow && this.entityJoinMap == null) {
+            schemaLoader.loadJoinMap(this);
         }
         return this.entityJoinMap;
+    }
+
+    protected void setEntityJoinMap(Map<String, QJoin> joinMap) {
+        if (this.entityJoinMap != null) {
+            throw new RuntimeException("entityJoinMap is already assigned.");
+        }
+        this.entityJoinMap = joinMap;
     }
 
     public static void dumpJPAHeader(SourceWriter sb, boolean includeJsonType) {
@@ -260,23 +275,16 @@ public class JdbcSchema extends QSchema {
         if (!isArrayJoin) {
             sb.write(mappedType);
         } else {
-            QSchema fkSchema = firstFk.getSchema();
-            boolean partOfUnique = true || ((JdbcSchema)fkSchema).isPartOfUniqueConstraint(firstFk);
+            JdbcSchema fkSchema = (JdbcSchema)firstFk.getSchema();
+            /* List 칼럼 여러 개를 동시에 검색하면 Hibernate 가 MultiBag 오류를 발생시킨다.
+               Set 을 사용하지 않으면, 동일 Data 가 중복되는 문제가 발생한다.
+               2022.02.17
+               현재로선 List 를 반드시 사용해야 하는 경우가 파악되지 않는다. 이제 일단 모든 Array 를 Set 으로 처리.
+             */
+            boolean partOfUnique = true || fkSchema.hasGeneratedId() || fkSchema.uniqueConstraints.size() > 0;
             sb.write(partOfUnique ? "Set<" : "List<").write(mappedType).write(">");
         }
         sb.write(" ").write(getJavaFieldName(join)).write(";\n\n");
-    }
-
-    private boolean isPartOfUniqueConstraint(QColumn column) {
-        String col_name = column.getPhysicalName().toLowerCase();
-        for (ArrayList<String> columns : this.uniqueConstraints.values()) {
-            for (String name : columns) {
-                if (col_name.equals(name.toLowerCase())) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private String getFKConstraintName(QColumn fk) {
@@ -359,13 +367,13 @@ public class JdbcSchema extends QSchema {
 
     protected QJoin getJoinByForeignKeyConstraints(String fkConstraint) {
         List<QColumn> fkColumns = this.fkConstraints.get(fkConstraint);
-        for (QJoin join : this.getEntityJoinMap().values()) {
+        for (QJoin join : this.importedByFkJoinMap.values()) {
             if (join.getForeignKeyColumns() == fkColumns) {
                 assert(join.getBaseSchema() == this && !join.isInverseMapped());
                 return join;
             }
         }
-        for (QJoin join : this.getEntityJoinMap().values()) {
+        for (QJoin join : this.importedByFkJoinMap.values()) {
             QSchema schema = join.getLinkedSchema();// getForeignKeyColumns().get(0).getSchema();
             System.out.println(schema.getTableName());
         }
@@ -468,5 +476,9 @@ public class JdbcSchema extends QSchema {
 
     /*package*/ final Map<String, QJoin> getEntityJoinMap_unsafe() {
         return this.entityJoinMap;
+    }
+
+    /*packet*/ final JoinMap getImportedJoins() {
+        return importedByFkJoinMap;
     }
 }

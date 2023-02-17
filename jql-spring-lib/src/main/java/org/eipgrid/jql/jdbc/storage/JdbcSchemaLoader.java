@@ -1,13 +1,11 @@
-package org.eipgrid.jql.jdbc.metadata;
+package org.eipgrid.jql.jdbc.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
-import org.eipgrid.jql.jdbc.SqlGenerator;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
-import org.eipgrid.jql.util.CaseConverter;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -155,28 +153,15 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         return schema;
     }
 
-    protected Map<String, QJoin> loadJoinMap(QSchema schema) {
+    protected void loadJoinMap(QSchema schema) {
         synchronized (schemaMap) {
-            EntityJoinHelper exportedJoins = jdbc.execute(new ConnectionCallback<EntityJoinHelper>() {
+            jdbc.execute(new ConnectionCallback<Void>() {
                 @Override
-                public EntityJoinHelper doInConnection(Connection conn) throws SQLException, DataAccessException {
-                    return getExternalJoins(conn, (JdbcSchema) schema);
+                public Void doInConnection(Connection conn) throws SQLException, DataAccessException {
+                    loadExternalJoins(conn, (JdbcSchema) schema);
+                    return null;
                 }
             });
-            return exportedJoins.createJoinMap((JdbcSchema) schema);
-        }
-    }
-
-    static class JoinMap extends HashMap<String, QJoin> {
-
-        public void add(JdbcSchema schema, List<QColumn> fkColumns, QJoin associateJoin) {
-            QJoin join = new QJoin(schema, fkColumns, associateJoin);
-            QJoin old = super.get(join.getJsonKey());
-            if (old != null) {
-                join.resolveNameConflict(old);
-            };
-            old = this.put(join.getJsonKey(), join);
-            assert(old == null);
         }
     }
 
@@ -291,25 +276,25 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         }
     }
 
-    private EntityJoinHelper getExternalJoins(Connection conn, JdbcSchema pkSchema) throws SQLException {
+    private void loadExternalJoins(Connection conn, JdbcSchema pkSchema) throws SQLException {
+        Map<String, QJoin> res = pkSchema.getEntityJoinMap(false);
+        if (res != null) {
+            return;
+        }
+
         final TablePath tablePath = TablePath.of(pkSchema.getTableName(), JdbcSchemaLoader.this);
         DatabaseMetaData md = conn.getMetaData();
         ResultSet rs = md.getExportedKeys(tablePath.getCatalog(), tablePath.getSchema(), tablePath.getSimpleName());
 
-        EntityJoinHelper joins = new EntityJoinHelper(pkSchema);
+        JoinMap.Builder joins = new JoinMap.Builder(pkSchema);
         while (rs.next()) {
             JoinData join = new JoinData(rs, this);
-            // @TODO loadSchema with ORM type
             JdbcSchema fkSchema = (JdbcSchema) loadSchema(join.fkTableQName);
-            if (fkSchema.getEntityJoinMap_unsafe() == null) {
-                getExternalJoins(conn, fkSchema);
-            }
             QJoin fkJoin = fkSchema.getJoinByForeignKeyConstraints(join.fk_name);
-            assert(fkJoin != null);
             joins.put(fkSchema, fkJoin);
         }
-        joins.validate();
-        return joins;
+        Map<String, QJoin> joinMap = joins.createJoinMap((JdbcSchema) pkSchema);
+        pkSchema.setEntityJoinMap(joinMap);
     }
 
     private ArrayList<QColumn> getColumns(Connection conn, TablePath tablePath, JdbcSchema schema, ArrayList<String> primaryKeys) throws SQLException {

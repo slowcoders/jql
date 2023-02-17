@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc.metadata;
+package org.eipgrid.jql.jdbc.storage;
 
 import javax.persistence.Table;
 

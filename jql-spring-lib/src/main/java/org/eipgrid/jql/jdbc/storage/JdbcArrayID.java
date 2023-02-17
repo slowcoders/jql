@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc.metadata;
+package org.eipgrid.jql.jdbc.storage;
 
 public class JdbcArrayID {
     private final Object[] keys;

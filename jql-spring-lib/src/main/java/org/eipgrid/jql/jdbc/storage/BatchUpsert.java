@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc;
+package org.eipgrid.jql.jdbc.storage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

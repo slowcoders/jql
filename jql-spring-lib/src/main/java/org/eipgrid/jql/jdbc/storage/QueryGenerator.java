@@ -1,7 +1,6 @@
-package org.eipgrid.jql.jdbc;
+package org.eipgrid.jql.jdbc.storage;
 
 import org.eipgrid.jql.JqlQuery;
-import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.parser.JqlFilter;
 
 import java.util.Map;

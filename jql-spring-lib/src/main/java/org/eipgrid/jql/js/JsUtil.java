@@ -3,7 +3,7 @@ package org.eipgrid.jql.js;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.schema.QJoin;
-import org.eipgrid.jql.jdbc.metadata.JdbcColumn;
+import org.eipgrid.jql.jdbc.storage.JdbcColumn;
 import org.eipgrid.jql.util.CaseConverter;
 import org.eipgrid.jql.util.ClassUtils;
 

@@ -1,7 +1,8 @@
 package org.eipgrid.jql.jdbc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eipgrid.jql.jdbc.metadata.JdbcSchemaLoader;
+import org.eipgrid.jql.jdbc.storage.JdbcSchemaLoader;
+import org.eipgrid.jql.jdbc.storage.QueryGenerator;
 import org.eipgrid.jql.jpa.JPARepositoryBase;
 import org.eipgrid.jql.schema.QSchema;
 import org.springframework.transaction.support.TransactionTemplate;

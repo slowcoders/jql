@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc.metadata;
+package org.eipgrid.jql.jdbc.storage;
 
 import org.eipgrid.jql.schema.QColumn;
 

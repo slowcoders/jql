@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc;
+package org.eipgrid.jql.jdbc.storage;
 
 import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.js.JsType;
