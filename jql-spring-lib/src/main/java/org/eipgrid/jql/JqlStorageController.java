@@ -57,7 +57,7 @@ public interface JqlStorageController {
                           @RequestParam(value = "select", required = false) String select$) {
             JqlRepository repository = getRepository(table);
             JqlSelect select = JqlSelect.of(select$);
-            Class idType = repository.getSchema().getIDType();
+            Class idType = repository.getSchema().getIdType();
             Object id = conversionService.convert(id$, idType);
             Object entity = repository.find(id, select);
             if (entity == null) {

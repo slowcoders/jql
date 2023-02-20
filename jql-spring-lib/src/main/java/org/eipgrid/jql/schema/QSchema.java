@@ -18,6 +18,7 @@ public abstract class QSchema {
     private List<QColumn> objectColumns;
     private List<QColumn> writableColumns;
     private Map<String, QColumn> columnMap = new HashMap<>();
+    private boolean hasGeneratedId;
 
     public QSchema(String tableName, Class<?> entityType) {
         this.tableName = tableName;
@@ -31,7 +32,7 @@ public abstract class QSchema {
 
     public final Class<?> getEntityType() { return entityType; }
 
-    public Class<?> getIDType() { return Object.class; }
+    public Class<?> getIdType() { return Object.class; }
 
     public final String getTableName() {
         return this.tableName;
@@ -97,11 +98,13 @@ public abstract class QSchema {
         ArrayList<QColumn> objectColumns = new ArrayList<>();
         List<QColumn> pkColumns = new ArrayList<>();
 
+        boolean hasGeneratedId = false;
         for (QColumn ci: columns) {
             this.columnMap.put(ci.getPhysicalName().toLowerCase(), ci);
 
             if (ci.isPrimaryKey()) {
                 pkColumns.add(ci);
+                hasGeneratedId |= ci.isAutoIncrement();
             }
             else {
                 allColumns.add(ci);
@@ -121,6 +124,7 @@ public abstract class QSchema {
         }
 
         allColumns.addAll(0, pkColumns);
+        this.hasGeneratedId = hasGeneratedId;
         this.allColumns = Collections.unmodifiableList(allColumns);
         this.writableColumns = Collections.unmodifiableList(writableColumns);
         this.leafColumns = Collections.unmodifiableList(primitiveColumns);
@@ -209,7 +213,7 @@ public abstract class QSchema {
     }
 
     public boolean hasGeneratedId() {
-        throw new RuntimeException("not impl");
+        return this.hasGeneratedId;
     }
 
     public boolean hasOnlyForeignKeys() {

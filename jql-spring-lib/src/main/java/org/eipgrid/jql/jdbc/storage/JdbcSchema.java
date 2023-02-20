@@ -36,8 +36,6 @@ public class JdbcSchema extends QSchema {
         return schemaLoader;
     }
 
-    public final Class<?> getIDType() { return idType; }
-
 
     protected void init(ArrayList<? extends QColumn> columns, HashMap<String, ArrayList<String>> uniqueConstraints, Class<?> ormType) {
         this.uniqueConstraints = uniqueConstraints;
@@ -417,7 +415,7 @@ public class JdbcSchema extends QSchema {
         return colName;
     }
 
-    protected Class<?> getIdType() {
+    public Class<?> getIdType() {
         if (this.idType == null) {
             List<QColumn> pkColumns = this.getPKColumns();
             if (pkColumns.size() == 1) {
@@ -445,7 +443,9 @@ public class JdbcSchema extends QSchema {
             if (pkColumns.size() == 1) {
                 QColumn pk = pkColumns.get(0);
                 if (this.isJPARequired()) {
-                    return (ID)pk.getMappedOrmField().get(entity);
+                    Field f = pk.getMappedOrmField();
+                    f.setAccessible(true);
+                    return (ID)f.get(entity);
                 } else {
                     return (ID)((Map)entity).get(pk.getJsonKey());
                 }
