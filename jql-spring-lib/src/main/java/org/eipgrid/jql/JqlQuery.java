@@ -16,9 +16,9 @@ import java.util.*;
  *    - Joined Property 명만 명시된 경우, 해당 Joined Entity 의 모든 Property 를 선택.
  */
 @Getter
-public class JqlQuery {
+public abstract class JqlQuery {
 
-    private final JqlEntitySet repository;
+    protected static int SingleEntityOffset = -100010001;
     private final JqlSelect select;
     private final JqlFilter filter;
 
@@ -30,8 +30,7 @@ public class JqlQuery {
     /*package*/ String executedQuery;
     /*package*/ Object extraInfo;
 
-    protected JqlQuery(JqlEntitySet repository, JqlSelect select, JqlFilter filter) {
-        this.repository = repository;
+    protected JqlQuery(JqlSelect select, JqlFilter filter) {
         if (select == null) {
             select = JqlSelect.Auto;
         }
@@ -39,38 +38,41 @@ public class JqlQuery {
         this.filter = filter;
     }
 
-    private JqlQuery(JqlEntitySet repository, JqlSelect select, Map<String, Object> filter) {
-        this(repository, select, repository.createFilter(filter));
+
+    public JqlQuery(JqlSelect select, Sort sort, int offset, int limit, JqlFilter filter) {
+        this(select, filter);
+        this.sort = sort;
+        this.offset = offset;
+        this.limit = limit;
     }
 
-    public static JqlQuery of(JqlEntitySet repository, JqlSelect select, Sort sort, int offset, int limit, Map<String, Object> filter) {
-        JqlQuery query = new JqlQuery(repository, select, filter);
-        query.sort = sort;
-        query.offset = offset;
-        query.limit = limit;
-        return query;
-    }
-
-    public static JqlQuery of(JqlEntitySet repository, JqlSelect select, Map<String, Object> filter) {
-        return new JqlQuery(repository, select, filter);
-    }
-    
     public boolean needPagination() {
         return offset >= 0 && limit > 0;
     }
 
+    protected abstract List<?> executeQuery(OutputFormat outputType);
+
     public Response execute() {
-        List<?> result = repository.find(this, OutputFormat.Object);
-        Response resp = new Response(result, filter);
+        return execute(OutputFormat.Object);
+    }
+
+    public Response execute(OutputFormat outputType) {
+        List<?> result = executeQuery(OutputFormat.Object);
+        Object content = null;
+        if (limit != 1 || offset != SingleEntityOffset) {
+            content = result;
+        }
+        else if (result.size() > 0) {
+            content = result.get(0);
+        }
+        Response resp = new Response(this, content, filter);
         if (needPagination()) {
             resp.setProperty("totalElements", this.count());
         }
         return resp;
     }
 
-    public long count() {
-        return repository.count(filter);
-    }
+    public abstract long count();
 
     @Data
     public static class Request {
@@ -82,16 +84,20 @@ public class JqlQuery {
         @Schema(implementation = Object.class)
         private HashMap filter;
 
-        public JqlQuery buildQuery(JqlEntitySet table) {
+        public Response execute(JqlEntitySet table) {
             JqlSelect _select = JqlSelect.of(select);
             Sort _sort = parseSort(sort);
             int _limit = limit == null ? 0 : limit;
             int _page = page == null ? -1 : page;
 
-            JqlQuery query = JqlQuery.of(table, _select, _sort, _page * _limit, _limit, filter);
-            return query;
+            JqlQuery query = table.createQuery(filter, _select);
+            query.sort = _sort;
+            query.limit = _limit;
+            query.offset = _page * _limit;
+            return query.execute();
         }
     }
+
 
     @Getter
     public static class Response {
@@ -103,7 +109,11 @@ public class JqlQuery {
         @JsonIgnore
         private QResultMapping resultMapping;
 
-        private Response(Object content, QResultMapping resultMapping) {
+        @JsonIgnore
+        private JqlQuery query;
+
+        private Response(JqlQuery query, Object content, QResultMapping resultMapping) {
+            this.query = query;
             this.content = content;
             this.resultMapping = resultMapping;
         }

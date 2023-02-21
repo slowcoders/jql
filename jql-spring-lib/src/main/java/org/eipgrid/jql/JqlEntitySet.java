@@ -7,23 +7,13 @@ import java.util.*;
 
 public interface JqlEntitySet<ENTITY, ID> {
 
-    JqlFilter createFilter(Map<String, Object> filter);
+    JqlQuery createQuery(ID id, JqlSelect select);
+
+    JqlQuery createQuery(Collection<ID> idList, JqlSelect select);
+
+    JqlQuery createQuery(Map<String, Object> filter, JqlSelect select);
 
     ID getEntityId(ENTITY entity);
-
-    List<ENTITY> find(JqlQuery query, OutputFormat outputType);
-
-    List<ENTITY> find(Collection<ID> idList);
-    default ENTITY find(ID id, JqlSelect select) {
-        List<ENTITY> res = find(Collections.singletonList(id));
-        return res.size() > 0 ? res.get(0) : null;
-    }
-    default ENTITY find(ID id) {
-        return find(id, null);
-    }
-
-    long count(JqlFilter filter);
-
 
     List<ID> insert(Collection<Map<String, Object>> entities) throws IOException;
     ENTITY insert(Map<String, Object> properties) throws IOException;

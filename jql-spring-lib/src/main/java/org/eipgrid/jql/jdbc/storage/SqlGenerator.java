@@ -224,7 +224,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         writeFrom(where, tableName, false);
         writeWhere(where);
         writeOrderBy(where, query.getSort(), false);//where.hasArrayDescendantNode());
-        if (!need_complex_pagination) {
+        if (!need_complex_pagination && isNativeQuery) {
             writePagination(query);
         }
         String sql = sw.reset();
@@ -242,13 +242,13 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
             QSchema schema = where.getSchema();
             sort.forEach(order -> {
                 String p = order.getProperty();
-                String qname = where.getMappingAlias() + '.' + schema.getColumn(p).getPhysicalName();
+                String qname = where.getMappingAlias() + '.' + resolveColumnName(schema.getColumn(p));
                 explicitSortColumns.add(qname);
                 sw.write(qname);
                 sw.write(order.isAscending() ? " asc" : " desc").write(", ");
             });
         }
-        if (need_joined_result_set_ordering) {
+        if (isNativeQuery && need_joined_result_set_ordering) {
             for (QResultMapping mapping : where.getResultMappings()) {
                 if (!mapping.hasArrayDescendantNode()) continue;
                 if (mapping != where && !mapping.isArrayNode()) continue;
@@ -264,6 +264,9 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         sw.replaceTrailingComma("");
     }
 
+    private String resolveColumnName(QColumn column) {
+        return isNativeQuery ? column.getPhysicalName() : column.getJsonKey();
+    }
     private void writePagination(JqlQuery pagination) {
         int offset = pagination.getOffset();
         int limit  = pagination.getLimit();

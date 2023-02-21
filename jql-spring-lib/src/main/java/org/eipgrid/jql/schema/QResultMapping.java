@@ -3,9 +3,11 @@ package org.eipgrid.jql.schema;
 import java.util.List;
 
 public interface QResultMapping {
+    QSchema getSchema();
+
     QResultMapping getParentNode();
 
-    QSchema getSchema();
+    QResultMapping getChildMapping(String name);
 
     String getMappingAlias();
 
@@ -21,5 +23,4 @@ public interface QResultMapping {
 
     boolean isEmpty();
 
-    QResultMapping getChildMapping(String name);
 }

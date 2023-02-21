@@ -1,11 +1,13 @@
 package org.eipgrid.jql.parser;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.schema.QResultMapping;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class JqlFilter extends TableFilter {
 
@@ -14,6 +16,8 @@ public class JqlFilter extends TableFilter {
 
     private boolean selectAuto;
     private boolean enableJPQL;
+
+    private static JqlParser parser = new JqlParser(new ObjectMapper());
 
     public JqlFilter(QSchema schema) {
         super(schema, "t_0");
@@ -31,6 +35,12 @@ public class JqlFilter extends TableFilter {
         JqlFilter filter = new JqlFilter(schema);
         QColumn first_pk = schema.getPKColumns().get(0);
         filter.getPredicateSet().add(PredicateFactory.IS.createPredicate(first_pk, idList));
+        return filter;
+    }
+
+    public static JqlFilter of(QSchema schema, Map<String, Object> jsFilter) {
+        JqlFilter filter = new JqlFilter(schema);
+        parser.parse(filter.getPredicateSet(), jsFilter, true);
         return filter;
     }
 

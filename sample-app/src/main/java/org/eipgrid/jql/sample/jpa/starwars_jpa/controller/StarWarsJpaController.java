@@ -24,9 +24,8 @@ public class StarWarsJpaController extends JqlStorageController.CRUD implements 
     public JqlQuery.Response find(@PathVariable("table") String table,
                                   @RequestBody JqlQuery.Request request) {
         JqlEntitySet repository = getRepository(table);
-        JqlQuery query = request.buildQuery(repository);
-        JqlQuery.Response resp = query.execute();
-        resp.setProperty("lastExecutedSql", query.getExecutedQuery());
+        JqlQuery.Response resp = request.execute(repository);
+        resp.setProperty("lastExecutedSql", resp.getQuery().getExecutedQuery());
         return resp;
     }
 

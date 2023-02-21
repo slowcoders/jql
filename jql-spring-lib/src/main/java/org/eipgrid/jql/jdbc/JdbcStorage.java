@@ -13,7 +13,7 @@ import java.util.HashMap;
 
 public class JdbcStorage extends JdbcSchemaLoader {
     private HashMap<String, JdbcTable> repositories = new HashMap<>();
-    private HashMap<Class, JpaTable> jpaRepositories = new HashMap<>();
+    private static HashMap<Class, JpaTable> jpaRepositories = new HashMap<>();
 
     public JdbcStorage(DataSource dataSource,
                        TransactionTemplate transactionTemplate,
@@ -63,6 +63,11 @@ public class JdbcStorage extends JdbcSchemaLoader {
                 }
             }
         }
+        return repo;
+    }
+
+    public static <T,ID> JpaTable<T,ID> findRepository(Class<T> entityType) {
+        JpaTable repo = jpaRepositories.get(entityType);
         return repo;
     }
 

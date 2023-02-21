@@ -31,14 +31,14 @@ public interface JqlEntitySetController<ID> {
         @Operation(summary = "지정 엔터티 읽기")
         @Transactional
         @ResponseBody
-        public Object get(@PathVariable("id") ID id,
+        public JqlQuery.Response get(@PathVariable("id") ID id,
                           @RequestParam(value = "select", required = false) String select$) {
             JqlSelect select = JqlSelect.of(select$);
-            Object entity = getEntitySet().find(id, select);
-            if (entity == null) {
+            JqlQuery.Response resp = getEntitySet().createQuery(id, select).execute();
+            if (resp.getContent() == null) {
                 throw new HttpServerErrorException("Entity(" + id + ") is not found", HttpStatus.NOT_FOUND, null, null, null, null);
             }
-            return entity;
+            return resp;
         }
 
         @PostMapping(path = "/find", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -56,7 +56,7 @@ public interface JqlEntitySetController<ID> {
         @ResponseBody
         public JqlQuery.Response find(@Schema(example = "{ \"select\": \"\", \"sort\": \"\", \"page\": 0, \"limit\": 0, \"filter\": { } }")
                                       @RequestBody JqlQuery.Request request) {
-            return request.buildQuery(getEntitySet()).execute();
+            return request.execute(getEntitySet());
         }
 
         @PostMapping(path = "/count")
@@ -65,7 +65,7 @@ public interface JqlEntitySetController<ID> {
         @ResponseBody
         public long count(@Schema(implementation = Object.class)
                           @RequestBody() HashMap<String, Object> jsFilter) {
-            long count = getEntitySet().count(getEntitySet().createFilter(jsFilter));
+            long count = getEntitySet().createQuery(jsFilter, null).count();//getEntitySet().createFilter(jsFilter));
             return count;
         }
     }
@@ -78,7 +78,7 @@ public interface JqlEntitySetController<ID> {
         @ResponseBody
         default JqlQuery.Response list(@RequestParam(value = "select", required = false) String select$) throws Exception {
             JqlSelect select = JqlSelect.of(select$);
-            return JqlQuery.of(getEntitySet(), select, null).execute();
+            return getEntitySet().createQuery((Map)null, select).execute();
         }
     }
 
@@ -103,12 +103,12 @@ public interface JqlEntitySetController<ID> {
         @Operation(summary = "엔터티 내용 변경")
         @Transactional
         @ResponseBody
-        default <ENTITY> Collection<ENTITY> update(
+        default JqlQuery.Response update(
                 @Schema(type = "string", required = true) @PathVariable("idList") Collection<ID> idList,
                 @RequestBody Map<String, Object> properties) throws Exception {
             JqlEntitySet<?, ID> table = getEntitySet();
             table.update(idList, properties);
-            return (Collection<ENTITY>) table.find(idList);
+            return table.createQuery(idList, null).execute();
         }
     }
 

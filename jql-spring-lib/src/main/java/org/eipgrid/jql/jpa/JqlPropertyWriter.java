@@ -13,6 +13,19 @@ import java.util.Stack;
 public class JqlPropertyWriter extends BeanPropertyWriter {
 //    private static final String JQL_STACK_KEY = "jql-entity-stack";
     private static final String JQL_RESULT_MAPPING_KEY = "jql-result-mapping";
+
+    public static final Class hibernateProxyClass;
+
+    static {
+        Class c;
+        try {
+            c = Class.forName("org.hibernate.proxy.HibernateProxy");
+        } catch (Exception e) {
+            c = null;
+        }
+        hibernateProxyClass = c;
+    }
+
     private final BeanPropertyWriter writer;
 
     public JqlPropertyWriter(BeanPropertyWriter writer) {

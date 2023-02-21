@@ -52,18 +52,15 @@ public interface JqlStorageController {
         @Operation(summary = "지정 엔터티 읽기")
         @Transactional
         @ResponseBody
-        public Object get(@PathVariable("table") String table,
-                          @PathVariable("id") String id$,
+        public JqlQuery.Response get(@PathVariable("table") String table,
+                          @PathVariable("id") Object id,
                           @RequestParam(value = "select", required = false) String select$) {
             JqlRepository repository = getRepository(table);
-            JqlSelect select = JqlSelect.of(select$);
-            Class idType = repository.getSchema().getIdType();
-            Object id = conversionService.convert(id$, idType);
-            Object entity = repository.find(id, select);
-            if (entity == null) {
-                throw new HttpServerErrorException("Entity(" + id$ + ") is not found", HttpStatus.NOT_FOUND, null, null, null, null);
+            JqlQuery.Response res = repository.createQuery(id, JqlSelect.of(select$)).execute();
+            if (res.getContent() == null) {
+                throw new HttpServerErrorException("Entity(" + id + ") is not found", HttpStatus.NOT_FOUND, null, null, null, null);
             }
-            return entity;
+            return res;
         }
 
         @PostMapping(path = "/{table}/find", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -84,7 +81,7 @@ public interface JqlStorageController {
                            @Schema(example = "{ \"select\": \"\", \"sort\": \"\", \"page\": 0, \"limit\": 0, \"filter\": { } }")
                            @RequestBody JqlQuery.Request request) {
             JqlRepository repository = getRepository(table);
-            return request.buildQuery(repository).execute();
+            return request.execute(repository);
         }
 
         @PostMapping(path = "/{table}/count")
@@ -95,7 +92,7 @@ public interface JqlStorageController {
                           @Schema(implementation = Object.class)
                           @RequestBody() HashMap<String, Object> jsFilter) {
             JqlRepository repository = getRepository(table);
-            long count = repository.count(repository.createFilter(jsFilter));
+            long count = repository.createQuery(jsFilter, null).count();
             return count;
         }
     }
@@ -110,7 +107,7 @@ public interface JqlStorageController {
                                        @RequestParam(value = "select", required = false) String select$) throws Exception {
             JqlRepository repository = getRepository(table);
             JqlSelect select = JqlSelect.of(select$);
-            return JqlQuery.of(repository, select, null).execute();
+            return repository.createQuery((Map)null, select).execute();
         }
     }
 

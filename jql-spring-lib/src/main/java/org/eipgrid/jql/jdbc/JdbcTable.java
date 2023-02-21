@@ -12,6 +12,7 @@ import org.eipgrid.jql.schema.QSchema;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
+import javax.persistence.Query;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,10 +46,18 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         boolean enableJPA = query.getFilter().isJPQLEnabled() && entityType == this.getEntityType();
         boolean isRepeat = (query.getExecutedQuery() != null && (Boolean)enableJPA == query.getExtraInfo());
 
-        String sql = isRepeat ? query.getExecutedQuery() : storage.createQueryGenerator(!enableJPA).createSelectQuery(query);
+        String sql = isRepeat ? query.getExecutedQuery() :
+                storage.createQueryGenerator(!enableJPA).createSelectQuery(query);
         List res;
         if (enableJPA) {
-            res = storage.getEntityManager().createQuery(sql).getResultList();
+            Query jpaQuery = storage.getEntityManager().createQuery(sql);
+            if (query.getLimit() > 1) {
+                jpaQuery = jpaQuery.setMaxResults(query.getLimit());
+            }
+            if (query.getOffset() > 0) {
+                jpaQuery = jpaQuery.setFirstResult(query.getOffset());
+            }
+            res = jpaQuery.getResultList();
         }
         else {
             res = jdbc.query(sql, getColumnMapRowMapper(query.getFilter()));
@@ -64,14 +73,10 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         return res;
     }
 
-    @Override
-    public List<ENTITY> find(JqlQuery query, OutputFormat outputType) {
-        return find(query);
-    }
-
 
     @Override
-    public long count(JqlFilter filter) {
+    public long count(JqlQuery query) {
+        JqlFilter filter = query == null ? null : query.getFilter();
         if (filter == null) {
             filter = new JqlFilter(this.schema);
         }
