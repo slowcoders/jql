@@ -29,6 +29,8 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
 
     protected JdbcTable(JdbcStorage storage, QSchema schema) {
         super(schema, storage.getObjectMapper());
+        storage.registerTable(this);
+
         this.storage = storage;
         this.jdbc = storage.getJdbcTemplate();
     }

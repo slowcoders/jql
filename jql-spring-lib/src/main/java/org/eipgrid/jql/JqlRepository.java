@@ -59,7 +59,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlEntitySet<ENTITY, 
     }
 
 
-    public List<ENTITY> findAll() { return find(new JdbcQuery(this, null, null), getEntityType()); }
+    public List<ENTITY> findAll() { return find(new JdbcQuery(this, null, new JqlFilter(schema)), getEntityType()); }
 
     public List<ENTITY> find(JqlQuery query, OutputFormat outputType) {
         return find(query);

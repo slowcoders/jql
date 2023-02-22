@@ -62,8 +62,8 @@ public abstract class JqlQuery {
         if (limit != 1 || offset != SingleEntityOffset) {
             content = result;
         }
-        else if (result.size() > 0) {
-            content = result.get(0);
+        else {
+            content = getTop(result);
         }
         Response resp = new Response(this, content, filter);
         if (needPagination()) {
@@ -72,7 +72,15 @@ public abstract class JqlQuery {
         return resp;
     }
 
+    private Object getTop(List<?> result) {
+        return result.size() > 0 ? result.get(0) : null;
+    }
+
     public abstract long count();
+
+    public <T> T getSingleResult() {
+        return (T)getTop(executeQuery(OutputFormat.Object));
+    }
 
     @Data
     public static class Request {

@@ -10,19 +10,12 @@ import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.*;
 
-public class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
+public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
 
     private final HashMap<ID, Object> associatedCache = new HashMap<>();
-    private static JqlStorage storageInstance;
 
-    public JpaTable(JdbcStorage storage, Class<ENTITY> entityType) {
+    protected JpaTable(JdbcStorage storage, Class<ENTITY> entityType) {
         super(storage, storage.loadSchema(entityType));
-        if (storageInstance == null) {
-            storageInstance = storage;
-        }
-        else if (storageInstance != storage) {
-            throw new RuntimeException("OrmRepositories must share single storage");
-        }
     }
 
     public ENTITY insert(Map<String, Object> dataSet) throws IOException {
@@ -37,6 +30,16 @@ public class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
         return res;
     }
 
+    public List<ENTITY> insertEntities(Collection<ENTITY> entities) {
+        List<ENTITY> result = new ArrayList<>();
+
+        for (ENTITY entity : entities) {
+            result.add(insert(entity));
+        }
+
+        return result;
+    }
+
 
     public ENTITY insert(ENTITY entity) {
         if (hasGeneratedId()) {
@@ -49,9 +52,7 @@ public class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
         return newEntity;
     }
 
-    public ID getEntityId(ENTITY entity) {
-        return getSchema().getEnityId(entity);
-    }
+    public abstract ID getEntityId(ENTITY entity);
 
     // Insert Or Update Entity
     // @Override
@@ -155,9 +156,4 @@ public class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
     }
 
 
-    public static class Util {
-        public static <T, ID> JpaTable<T, ID> findRepository(Class<T> entityType) {
-            return (JpaTable<T, ID>) storageInstance.getRepository(entityType);
-        }
-    }
 }
