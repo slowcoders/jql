@@ -2,7 +2,6 @@ package org.eipgrid.jql.jpa;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.jdbc.JdbcTable;
-import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.jdbc.JdbcStorage;
 
 import javax.persistence.Cache;
@@ -25,7 +24,7 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
         return newEntity;
     }
 
-    public List<ID> insert(Collection<Map<String, Object>> entities) {
+    public List<ID> insert(Collection<? extends Map<String, Object>> entities) {
         List<ID> res = super.insert(entities);
         return res;
     }
@@ -85,7 +84,7 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
 
 
     @Override
-    public void update(Collection<ID> idList, Map<String, Object> updateSet) throws IOException {
+    public void update(Iterable<ID> idList, Map<String, Object> updateSet) throws IOException {
         ArrayList<ENTITY> list = new ArrayList<>();
         for (ID id: idList) {
             update(id, updateSet);
@@ -123,7 +122,7 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
 
 
     @Override
-    public void delete(Collection<ID> idList) {
+    public void delete(Iterable<ID> idList) {
         super.delete(idList);
         for (ID id : idList) {
             removeEntityCache(id);

@@ -313,29 +313,24 @@ public abstract class TSDBHelper {
 
     public JqlRepository getRepository() throws SQLException {
         Connection con = storage.getDataSource().getConnection();
-//        return jdbc.execute(new ConnectionCallback<JQRepository>() {
-//            @Override
-//            public JQRepository doInConnection(Connection con) throws SQLException, DataAccessException {
-                conn = con;
+        conn = con;
 
-                boolean autoCommitOld = con.getAutoCommit();
-                try {
-                    con.setAutoCommit(true);
-                    if (!isTableExists(tableName)) {
-                        String sql = generateDDL(tableName);
-                        execute(sql);
-                    }
+        boolean autoCommitOld = con.getAutoCommit();
+        try {
+            con.setAutoCommit(true);
+            if (!isTableExists(tableName)) {
+                String sql = generateDDL(tableName);
+                execute(sql);
+            }
 
-                    QSchema schema = storage.loadSchema(tableName);
-                    initializeTSDB(schema);
-                    return storage.getRepository(tableName);
-                }
-                finally {
-                    con.setAutoCommit(autoCommitOld);
-                    con.close();
-                }
-//            }
-//        });
+            QSchema schema = storage.loadSchema(tableName);
+            initializeTSDB(schema);
+            return storage.getRepository(tableName);
+        }
+        finally {
+            con.setAutoCommit(autoCommitOld);
+            con.close();
+        }
     }
 
     protected abstract String generateDDL(String tableName);

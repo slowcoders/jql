@@ -89,8 +89,8 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
 
     // Insert Or Update Entity
     @Override
-    public List<ID> insert(Collection<Map<String, Object>> entities) {
-        if (entities.isEmpty()) return null;
+    public List<ID> insert(Collection<? extends Map<String, Object>> entities) {
+        if (entities.isEmpty()) return Collections.emptyList();
 
         BatchUpsert batch = new BatchUpsert(this.getSchema(), entities, true);
         jdbc.batchUpdate(batch.getSql(), batch);
@@ -103,7 +103,7 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
     }
 
     @Override
-    public void update(Collection<ID> idList, Map<String, Object> updateSet) throws IOException {
+    public void update(Iterable<ID> idList, Map<String, Object> updateSet) throws IOException {
         JqlFilter filter = JqlFilter.of(schema, idList);
         String sql = storage.createQueryGenerator().createUpdateQuery(filter, updateSet);
         jdbc.update(sql);
@@ -117,7 +117,7 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
     }
 
     @Override
-    public void delete(Collection<ID> idList) {
+    public void delete(Iterable<ID> idList) {
         JqlFilter filter = JqlFilter.of(schema, idList);
         String sql = storage.createQueryGenerator().createDeleteQuery(filter);
         jdbc.update(sql);

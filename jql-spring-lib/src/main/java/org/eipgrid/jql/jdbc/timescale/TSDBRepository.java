@@ -15,7 +15,7 @@ public abstract class TSDBRepository<ENTITY, ID> extends JpaTable<ENTITY, ID> {
 
     private final String timeKeyColumnName;
 
-    public TSDBRepository(JdbcStorage storage, Class<ENTITY> entityType, Class<ID> idType, String timeKeyColumnName) {
+    public TSDBRepository(JdbcStorage storage, Class<ENTITY> entityType, String timeKeyColumnName) {
         super(storage, entityType);
         this.timeKeyColumnName = timeKeyColumnName;
 

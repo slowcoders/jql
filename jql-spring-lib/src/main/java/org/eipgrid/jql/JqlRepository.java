@@ -39,7 +39,7 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlEntitySet<ENTITY, 
         return new JdbcQuery(this, select, jqlFilter);
     }
 
-    public JqlQuery createQuery(Collection<ID> idList, JqlSelect select) {
+    public JqlQuery createQuery(Iterable<ID> idList, JqlSelect select) {
         JqlFilter jqlFilter = JqlFilter.of(schema, idList);
         return new JdbcQuery(this, select, jqlFilter);
     }
@@ -121,11 +121,11 @@ public abstract class JqlRepository<ENTITY, ID> implements JqlEntitySet<ENTITY, 
 
 
 
-    public abstract List<ID> insert(Collection<Map<String, Object>> entities);
+    public abstract List<ID> insert(Collection<? extends Map<String, Object>> entities);
 
-    public abstract void update(Collection<ID> idList, Map<String, Object> updateSet) throws IOException;
+    public abstract void update(Iterable<ID> idList, Map<String, Object> updateSet) throws IOException;
 
-    public abstract void delete(Collection<ID> idList);
+    public abstract void delete(Iterable<ID> idList);
 
     @Override
     public boolean equals(Object o) {
