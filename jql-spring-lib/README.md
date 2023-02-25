@@ -38,17 +38,15 @@ jql_value = jql_primitive | ArrayOf(jql_primitive) | jql_node | ArrayOf(jql_node
 Finding all person whose first name starts with "Luke" 
 ```js
 const DB_TABLE = "character"
-const jql = {
-    filter: {
-        "name@like": "Luke%"
-    }
+const jql = { 
+    "name@like": "Luke%"
 }
 const res = axios.post(`http://localhost:7007/api/jql/starwars/${DB_TABLE}/find`, jql)
 ```
 ```sh
 curl -X 'POST' 'http://localhost:7007/api/jql/starwars/character/find' \
      -H 'Content-Type: application/json' \
-     -d '{  "filter": { "name@like": "Luke%" } }'
+     -d '{ "name@like": "Luke%" }'
 ```
 
 Finding all starships of the person named "Luke Skywalker"

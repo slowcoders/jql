@@ -77,6 +77,12 @@ public class SourceWriter<Self extends SourceWriter> {
         return (Self)this;
     }
 
+    public Self writeValueAndComma(Object value) {
+        this.writeValue(value);
+        this.write(", ");
+        return (Self) this;
+    }
+
     public Self writeQuoted(Object value) {
         if (value == null) {
             sb.append("null");
@@ -147,4 +153,25 @@ public class SourceWriter<Self extends SourceWriter> {
         }
         return true;
     }
+
+    public SourceWriter<Self> write(long v) {
+        sb.append(v);
+        return this;
+    }
+
+    public SourceWriter<Self> write(boolean v) {
+        sb.append(v);
+        return this;
+    }
+
+    public SourceWriter<Self> write(float v) {
+        sb.append(v);
+        return this;
+    }
+
+    public SourceWriter<Self> write(double v) {
+        sb.append(v);
+        return this;
+    }
+
 }

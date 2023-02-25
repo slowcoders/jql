@@ -2,13 +2,16 @@ package org.eipgrid.jql.jpa;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import org.eipgrid.jql.JqlQuery;
+import org.eipgrid.jql.JqlRestApi;
+import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QResultMapping;
 
-import java.util.Stack;
+import javax.persistence.Entity;
+import java.util.Map;
 
 public class JqlPropertyWriter extends BeanPropertyWriter {
 //    private static final String JQL_STACK_KEY = "jql-entity-stack";
@@ -54,33 +57,33 @@ public class JqlPropertyWriter extends BeanPropertyWriter {
                                  JsonGenerator gen,
                                  SerializerProvider prov) throws Exception {
         JavaType valueType = writer.getType();
-        if (valueType.getContentType() != null) {
-            valueType = valueType.getContentType();
+        boolean check_ref = valueType.getContentType() != null;
+        if (!check_ref) {
+            Class<?> clazz = valueType.getRawClass();
+            check_ref = // !JsType.of(clazz).isPrimitive();
+                clazz.getAnnotation(Entity.class) != null ||
+                        Map.class.isAssignableFrom(clazz) ||
+                        JsonNode.class.isAssignableFrom(clazz);
         }
 
-        QResultMapping mapping = (QResultMapping) prov.getAttribute(JQL_RESULT_MAPPING_KEY);
+        Map<String, Object> mapping = (Map<String, Object>) prov.getAttribute(JQL_RESULT_MAPPING_KEY);
         if (mapping == null) {
-            if (bean instanceof JqlQuery.Response) {
-                prov.setAttribute(JQL_RESULT_MAPPING_KEY, ((JqlQuery.Response)bean).getResultMapping());
+            if (bean instanceof JqlRestApi.Response) {
+                prov.setAttribute(JQL_RESULT_MAPPING_KEY, ((JqlRestApi.Response)bean).getResultMapping());
             }
-            mapping = (QResultMapping) prov.getAttribute(JQL_RESULT_MAPPING_KEY);
+            mapping = (Map<String, Object>) prov.getAttribute(JQL_RESULT_MAPPING_KEY);
             prov.setAttribute(JQL_RESULT_MAPPING_KEY, mapping);
-        } else {
+        } else if (check_ref) {
             String pname = this.getName();
-            QColumn column = mapping.getSchema().findColumn(pname);
-            boolean isRef = (column != null && column.isJsonNode()) ||
-                mapping.getSchema().getEntityJoinBy(pname) != null;
-            if (isRef) {
-                QResultMapping child = mapping.getChildMapping(this.getName());
-                if (child != null) {
-                    prov.setAttribute(JQL_RESULT_MAPPING_KEY, child);
-                    super.serializeAsField(bean, gen, prov);
-                    prov.setAttribute(JQL_RESULT_MAPPING_KEY, mapping);
-                }
-                return;
+            Object column = mapping.get(pname);
+            if (column != null) {
+                prov.setAttribute(JQL_RESULT_MAPPING_KEY, column);
+                super.serializeAsField(bean, gen, prov);
+                prov.setAttribute(JQL_RESULT_MAPPING_KEY, mapping);
             }
+            return;
         }
-        Object value = gen.getCurrentValue();
+//        Object value = gen.getCurrentValue();
 //        Stack stack = getStack(prov);
 //        if (stack.contains(value)) {
 //            return;

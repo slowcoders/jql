@@ -12,6 +12,12 @@ repositories {
     maven { url "https://plugins.gradle.org/m2/" }
 }
 
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
 dependencies {
     implementation project(':jql-spring-lib')
 

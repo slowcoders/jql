@@ -1,17 +1,20 @@
 package org.eipgrid.jql;
 
+import org.springframework.data.domain.Sort;
+
 import java.io.IOException;
 import java.util.*;
 
 public interface JqlEntitySet<ENTITY, ID> {
 
-    JqlQuery createQuery(ID id, JqlSelect select);
+    JqlQuery<ENTITY> createQuery(Map<String, Object> filter);
 
-    JqlQuery createQuery(Iterable<ID> idList, JqlSelect select);
+    ENTITY find(ID id, JqlSelect select);
 
-    JqlQuery createQuery(Map<String, Object> filter, JqlSelect select);
+    List<ENTITY> find(Iterable<ID> idList, JqlSelect select);
 
-    ID getEntityId(ENTITY entity);
+    List<ENTITY> findAll(JqlSelect select, Sort sort);
+
 
     List<ID> insert(Collection<? extends Map<String, Object>> entities) throws IOException;
     

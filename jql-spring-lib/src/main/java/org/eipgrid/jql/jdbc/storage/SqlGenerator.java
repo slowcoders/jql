@@ -1,5 +1,6 @@
 package org.eipgrid.jql.jdbc.storage;
 
+import org.eipgrid.jql.jdbc.JdbcQuery;
 import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.*;
@@ -186,10 +187,10 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         return false;
     }
 
-    public String createSelectQuery(JqlQuery query) {
+    public String createSelectQuery(JdbcQuery query) {
         sw.reset();
         JqlFilter where = query.getFilter();
-        where.setSelectedProperties(query.getSelect().getPropertyNames());
+        where.setSelectedProperties(query.getSelection().getPropertyNames());
 
         String tableName = isNativeQuery ? where.getTableName() : where.getSchema().getEntityType().getName();
         boolean need_complex_pagination = isNativeQuery && query.getLimit() > 0 && needDistinctPagination(where);
@@ -224,9 +225,9 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         writeFrom(where, tableName, false);
         writeWhere(where);
         writeOrderBy(where, query.getSort(), false);//where.hasArrayDescendantNode());
-        if (!need_complex_pagination && isNativeQuery) {
-            writePagination(query);
-        }
+//        if (!need_complex_pagination && isNativeQuery) {
+//            writePagination(query);
+//        }
         String sql = sw.reset();
         return sql;
     }

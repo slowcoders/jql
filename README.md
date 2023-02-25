@@ -4,6 +4,7 @@
 * jdk version 11 or later
 * docker-compose
 * node.js version 14 or later
+* npm version 8 or later
 
 ### Build tutorial sample application
 ```

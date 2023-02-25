@@ -27,9 +27,8 @@ const http_options = {
 }
 async function call_http(method, command, filter, options) {
     //const params = to_url_param(options)
-    const jql = { ...options, filter };
-    const url = `${baseUrl}/${command}`
-    const response = await axios[method].call(axios, url, jql, http_options);
+    const url = `${baseUrl}/${command}${to_url_param(options)}`
+    const response = await axios[method].call(axios, url, filter, http_options);
     return response.data;
 }
 

@@ -25,9 +25,12 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
 
 
     @Override
-    public JqlQuery.Response find(@Schema(example = "{ \"select\": \"\", \"sort\": \"\", \"page\": 0, \"limit\": 0, \"filter\": { } }")
-                                  @RequestBody JqlQuery.Request request) {
-        JqlQuery.Response resp = request.execute(getEntitySet());
+    public Response find(@RequestParam(value = "select", required = false) String select,
+                         @RequestParam(value = "sort", required = false) @Schema(implementation = String.class) String[] orders,
+                         @RequestParam(value = "page", required = false) Integer page,
+                         @RequestParam(value = "limit", required = false) Integer limit,
+                         @RequestBody(required = false) Map<String, Object> filter) {
+        Response resp = super.find(select, orders, page, limit, filter);
         resp.setProperty("lastExecutedSql", resp.getQuery().getExecutedQuery());
         return resp;
     }

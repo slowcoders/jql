@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import lombok.SneakyThrows;
-import org.eipgrid.jql.JqlQuery;
+import org.eipgrid.jql.JqlRestApi;
 import org.eipgrid.jql.jpa.JqlPropertyWriter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.context.annotation.Bean;
@@ -61,7 +61,7 @@ public class DefaultJqlConfig {
                         BeanPropertyWriter writer = beanProperties.get(i);
                         Class<?> clazz = beanDesc.getBeanClass();
                         if (clazz.getAnnotation(Entity.class) != null
-                            || JqlQuery.Response.class.isAssignableFrom(clazz)) {
+                            || JqlRestApi.Response.class.isAssignableFrom(clazz)) {
                             beanProperties.set(i, new JqlPropertyWriter(writer));
                         }
                     }
