@@ -18,7 +18,7 @@
 import LessonView from "@/components/LessonView";
 
 const sample_code = `
-const jql_select = AUTO;
+const jql_select = 'name, friend_.(name, friend_.name)';
 
 const jql_filter = {
   /*

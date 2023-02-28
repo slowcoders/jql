@@ -180,10 +180,34 @@ export default {
     execute() {
       try {
         eval(this.sampleCode);
-      }
-      catch(e) {
+      } catch (e) {
         this.show_error_in_result_view("Test source compile error.\n" + e.message);
       }
+    },
+
+
+    to_url_param(options) {
+      if (!options) return "";
+
+      let params = ""
+      for (const k in options) {
+        params += params.length > 1 ? '&' : '?';
+        params += k + "=" + options[k];
+      }
+      return params;
+    },
+
+    make_http_param() {
+      const vm = this;
+      let param = "select=";
+      param += (vm.selectedColumns?.length > 0) ? vm.selectedColumns : '${jql_select}'
+      if (vm.first_sort?.length > 0) {
+        param += '&sort=' + vm.first_sort
+      }
+      if (vm.limit > 0) {
+        param += '&limit=' + vm.limit
+      }
+      return param;
     },
 
     make_sample_code() {
@@ -194,13 +218,8 @@ const dbSchema = '${vm.selectedStorage}'
 const dbTable = '${vm.selectedTable}'
 const AUTO = ""
 ${vm.js_code}
-const jql = {
-  select: ${vm.selectedColumns?.length > 0 ? '"' + vm.selectedColumns + '"' : 'jql_select'},\
-  ${vm.first_sort?.length > 0 ? '\n  sort: "' + vm.first_sort + '", ' : ''}\
-  ${vm.limit > 0 ? '\n  limit: ' + vm.limit + ', ' : ''}
-  filter: jql_filter
-}
-this.http_post(\`\${baseUrl}/\${dbSchema}/\${dbTable}/find\`, jql);
+const jql_param = \`${vm.make_http_param()}\`
+this.http_post(\`\${baseUrl}/\${dbSchema}/\${dbTable}/find?\${jql_param}\`, jql_filter);
 ${vm.schemaInfo}`
     },
 
