@@ -145,7 +145,14 @@ class TableFilter extends EntityFilter implements QResultMapping {
 
     protected void addSelectedColumn(String key) {
         if (key.equals("*")) {
-            this.selectedColumns = schema.getLeafColumns();
+            if (this.selectedColumns == null) {
+                this.selectedColumns = schema.getLeafColumns();
+            }
+            else {
+                for (QColumn k : schema.getLeafColumns()) {
+                    addSelectedColumn(k);
+                }
+            }
         }
         else if (key.equals("0")) {
             if (this.selectedColumns == null) {
