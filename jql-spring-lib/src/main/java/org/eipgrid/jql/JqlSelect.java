@@ -64,8 +64,7 @@ public class JqlSelect {
                 case '(':
                     key = select.substring(start, idx).trim();
                     if (key.charAt(key.length()-1) != '.') {
-                        // key.equals("@to_array")
-                        return idx;
+                        key += '.';
                     }
                     HashMap<String, Object> subMap = new HashMap<>();
                     map.put(key, subMap);

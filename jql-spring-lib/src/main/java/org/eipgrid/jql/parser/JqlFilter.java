@@ -65,6 +65,10 @@ public class JqlFilter extends TableFilter {
                 break;
             }
             String token = key.substring(0, p);
+            TableFilter table = scope.asTableFilter();
+            if (table.isArrayNode()) {
+                table.addSelectedColumn("0");
+            }
             scope = scope.makeSubNode(token, JqlParser.NodeType.Entity);
             key = key.substring(p + 1);
         }
