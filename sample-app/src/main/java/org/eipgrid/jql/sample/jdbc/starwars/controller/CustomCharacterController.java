@@ -25,11 +25,14 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
 
 
     @Override
-    public Response find(@RequestParam(value = "select", required = false) String select,
-                         @RequestParam(value = "sort", required = false) @Schema(implementation = String.class) String[] orders,
-                         @RequestParam(value = "page", required = false) Integer page,
-                         @RequestParam(value = "limit", required = false) Integer limit,
-                         @RequestBody(required = false) Map<String, Object> filter) {
+    public Response find(
+            @RequestParam(value = "select", required = false) String select,
+            @Schema(implementation = String.class)
+            @RequestParam(value = "sort", required = false) String[] orders,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @Schema(implementation = Object.class)
+            @RequestBody Map<String, Object> filter) {
         Response resp = super.find(select, orders, page, limit, filter);
         resp.setProperty("lastExecutedSql", resp.getQuery().getExecutedQuery());
         return resp;
@@ -63,7 +66,9 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
     @Override
     @Operation(summary = "엔터티 추가 (default 값 설정 기능 추가)")
     @Transactional
-    public <ENTITY> ENTITY add(@RequestBody Map<String, Object> properties) throws Exception {
+    public <ENTITY> ENTITY add(
+            @Schema(implementation = Object.class)
+            @RequestBody Map<String, Object> properties) throws Exception {
         if (properties.get("metadata") == null) {
             properties.put("metadata", createNote());
         }

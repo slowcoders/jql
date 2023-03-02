@@ -2,6 +2,7 @@ package org.eipgrid.jql;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.eipgrid.jql.js.JsUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +33,10 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
         @Operation(summary = "지정 엔터티 읽기")
         @Transactional
         @ResponseBody
-        public Response get(@PathVariable("id") @Schema(implementation = String.class) ID id,
-                            @RequestParam(value = "select", required = false) String select$) {
+        public Response get(
+                @Schema(implementation = String.class)
+                @PathVariable("id") ID id,
+                @RequestParam(value = "select", required = false) String select$) {
             JqlSelect select = JqlSelect.of(select$);
             Object res = getEntitySet().find(id, select);
             if (res == null) {
@@ -46,11 +49,14 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
         @Operation(summary = "엔터티 검색")
         @Transactional
         @ResponseBody
-        public Response find(@RequestParam(value = "select", required = false) String select,
-                             @RequestParam(value = "sort", required = false) @Schema(implementation = String.class) String[] orders,
-                             @RequestParam(value = "page", required = false) Integer page,
-                             @RequestParam(value = "limit", required = false) Integer limit,
-                             @RequestBody(required = false) Map<String, Object> filter) {
+        public Response find(
+                @RequestParam(value = "select", required = false) String select,
+                @Schema(implementation = String.class)
+                @RequestParam(value = "sort", required = false) String[] orders,
+                @RequestParam(value = "page", required = false) Integer page,
+                @RequestParam(value = "limit", required = false) Integer limit,
+                @Schema(implementation = Object.class)
+                @RequestBody Map<String, Object> filter) {
             return search(getEntitySet(), select, orders, page, limit, filter);
         }
 
@@ -58,10 +64,24 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
         @Operation(summary = "엔터티 수 조회")
         @Transactional
         @ResponseBody
-        public long count(@Schema(implementation = Object.class)
-                          @RequestBody(required = false) HashMap<String, Object> jsFilter) {
+        public long count(
+                @Schema(implementation = Object.class)
+                @RequestBody HashMap<String, Object> jsFilter) {
             long count = getEntitySet().createQuery(jsFilter).count();
             return count;
+        }
+
+        @PostMapping("/schema")
+        @ResponseBody
+        @Operation(summary = "엔터티 속성 정보 요약")
+        public String schema() {
+            JqlEntitySet<?, ID> entitySet = getEntitySet();
+            String schema = "<<No Schema>>";
+            if (entitySet instanceof JqlRepository) {
+                JqlRepository repository = (JqlRepository) entitySet;
+                schema = JsUtil.getSimpleSchema(repository.getSchema());
+            }
+            return schema;
         }
     }
 
@@ -71,11 +91,13 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
         @Operation(summary = "전체 목록")
         @Transactional
         @ResponseBody
-        default Response list(@RequestParam(value = "select", required = false) String select$,
-                              @RequestParam(value = "sort", required = false) String[] orders) throws Exception {
-            JqlSelect select = JqlSelect.of(select$);
-            List<?> res = getEntitySet().findAll(select, JqlRestApi.buildSort(orders));
-            return Response.of(res, select);
+        default Response list(
+                @RequestParam(value = "select", required = false) String select,
+                @Schema(implementation = String.class)
+                @RequestParam(value = "sort", required = false) String[] orders,
+                @RequestParam(value = "page", required = false) Integer page,
+                @RequestParam(value = "limit", required = false) Integer limit) throws Exception {
+            return search(getEntitySet(), select, orders, page, limit, null);
         }
     }
 
@@ -86,8 +108,9 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
         @Operation(summary = "엔터티 추가")
         @Transactional
         @ResponseBody
-        default <ENTITY> ENTITY add(@Schema(implementation = Object.class)
-                       @RequestBody Map<String, Object> properties) throws Exception {
+        default <ENTITY> ENTITY add(
+                @Schema(implementation = Object.class)
+                @RequestBody Map<String, Object> properties) throws Exception {
             JqlEntitySet<?, ID> table = getEntitySet();
             ENTITY entity = (ENTITY)table.insert(properties);
             return entity;
@@ -101,9 +124,11 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
         @Transactional
         @ResponseBody
         default Response update(
-                @Schema(type = "string", required = true) @PathVariable("idList") Collection<ID> idList,
-                @RequestBody Map<String, Object> properties,
-                @RequestParam(value = "select", required = false) String select$) throws Exception {
+                @Schema(type = "string", required = true)
+                @PathVariable("idList") Collection<ID> idList,
+                @RequestParam(value = "select", required = false) String select$,
+                @Schema(implementation = Object.class)
+                @RequestBody Map<String, Object> properties) throws Exception {
             JqlSelect select = JqlSelect.of(select$);
             JqlEntitySet<?, ID> table = getEntitySet();
             table.update(idList, properties);

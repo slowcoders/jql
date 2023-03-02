@@ -23,12 +23,15 @@ public class StarWarsJpaController extends JqlStorageController.CRUD implements 
     }
 
     @Override
-    public Response find(@PathVariable("table") String table,
-                         @RequestParam(value = "select", required = false) String select,
-                         @RequestParam(value = "sort", required = false) @Schema(implementation = String.class) String[] orders,
-                         @RequestParam(value = "page", required = false) Integer page,
-                         @RequestParam(value = "limit", required = false) Integer limit,
-                         @RequestBody(required = false) Map<String, Object> filter) {
+    public Response find(
+            @PathVariable("table") String table,
+            @RequestParam(value = "select", required = false) String select,
+            @Schema(implementation = String.class)
+            @RequestParam(value = "sort", required = false) String[] orders,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @Schema(implementation = Object.class)
+            @RequestBody Map<String, Object> filter) {
         Response resp = super.find(table, select, orders, page, limit, filter);
         resp.setProperty("lastExecutedSql", resp.getQuery().getExecutedQuery());
         return resp;

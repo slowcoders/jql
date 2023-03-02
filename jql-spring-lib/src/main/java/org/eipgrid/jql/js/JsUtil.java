@@ -125,6 +125,7 @@ public class JsUtil {
         StringBuilder sb = new StringBuilder();
         sb.append("Type").append(filler.substring("Type".length())).append("Key(physical_column_name)\n");
         sb.append("--------------------------------------------------\n");
+        sb.append("// Leaf properties //\n");
         List<QColumn> primitiveColumns = schema.getLeafColumns();
         for (QColumn col : primitiveColumns) {
             dumpColumnInfo(col, sb);
@@ -134,7 +135,7 @@ public class JsUtil {
                 || !schema.getEntityJoinMap().isEmpty();
 
         if (hasRef) {
-            sb.append("\n// reference properties //\n");
+            sb.append("\n// Reference properties //\n");
 
             for (QColumn col : schema.getReadableColumns()) {
                 if (!JsType.of(col.getValueType()).isPrimitive()) {

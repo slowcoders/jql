@@ -59,7 +59,7 @@ public abstract class JdbcMetadataController {
     @GetMapping("/{namespace}/{table}/{type}")
     @ResponseBody
     @Operation(summary = "Schema 소스 생성")
-    public String jsonSchema(@PathVariable("namespace") String namespace,
+    public String genSchema(@PathVariable("namespace") String namespace,
                              @PathVariable("table") String tableName,
                              @PathVariable("type") SchemaType type) throws Exception {
         if ("*".equals(tableName)) {

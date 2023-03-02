@@ -25,29 +25,34 @@ const http_options = {
         "Content-Type" : "application/json"
     }
 }
-async function call_http(method, command, filter, options) {
-    //const params = to_url_param(options)
+async function http_get(command, options) {
     const url = `${baseUrl}/${command}${to_url_param(options)}`
-    const response = await axios[method].call(axios, url, filter, http_options);
+    const response = await axios.get(url);
     return response.data;
 }
 
+async function http_post(command, filter, options) {
+    const url = `${baseUrl}/${command}${to_url_param(options)}`
+    if (!filter) filter = {}
+    const response = await axios.post(url, filter, http_options);
+    return response.data;
+}
 
 export const jqlApi = {
     cachedListTs: 0,
     cachedList: null,
 
     async count(filter) {
-        return await call_http('post', 'count', filter)
+        return await http_post('count', filter)
     },
 
     async find(filter, options) {
-        return await call_http('post', 'find', filter, options);
+        return await http_post('find', filter, options);
     },
 
     async top(filter, options) {
         options = { ...options, page: -1, limit: 1 }
-        const res = await call_http('post', 'find', filter, options);
+        const res = await http_post('find', filter, options);
         return res.content.length > 0 ? res.content[0] : null;
     },
 }

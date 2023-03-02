@@ -2,6 +2,7 @@ package org.eipgrid.jql;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.eipgrid.jql.js.JsUtil;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -53,9 +54,11 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "지정 엔터티 읽기")
         @Transactional
         @ResponseBody
-        public Response get(@PathVariable("table") String table,
-                            @PathVariable("id") @Schema(implementation = String.class) Object id,
-                            @RequestParam(value = "select", required = false) String select$) {
+        public Response get(
+                @PathVariable("table") String table,
+                @Schema(implementation = String.class)
+                @PathVariable("id") Object id,
+                @RequestParam(value = "select", required = false) String select$) {
             JqlRepository repository = getRepository(table);
             JqlSelect select = JqlSelect.of(select$);
             Object res = repository.find(id, select);
@@ -69,12 +72,15 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "엔터티 검색")
         @Transactional
         @ResponseBody
-        public Response find(@PathVariable("table") String table,
-                             @RequestParam(value = "select", required = false) String select,
-                             @RequestParam(value = "sort", required = false) @Schema(implementation = String.class) String[] orders,
-                             @RequestParam(value = "page", required = false) Integer page,
-                             @RequestParam(value = "limit", required = false) Integer limit,
-                             @RequestBody(required = false) Map<String, Object> filter) {
+        public Response find(
+                @PathVariable("table") String table,
+                @RequestParam(value = "select", required = false) String select,
+                @Schema(implementation = String.class)
+                @RequestParam(value = "sort", required = false) String[] orders,
+                @RequestParam(value = "page", required = false) Integer page,
+                @RequestParam(value = "limit", required = false) Integer limit,
+                @Schema(implementation = Object.class)
+                @RequestBody Map<String, Object> filter) {
             JqlRepository repository = getRepository(table);
             return search(repository, select, orders, page, limit, filter);
         }
@@ -83,12 +89,22 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "엔터티 수 조회")
         @Transactional
         @ResponseBody
-        public long count(@PathVariable("table") String table,
-                          @Schema(implementation = Object.class)
-                          @RequestBody(required = false) HashMap<String, Object> jsFilter) {
+        public long count(
+                @PathVariable("table") String table,
+                @Schema(implementation = Object.class)
+                @RequestBody HashMap<String, Object> jsFilter) {
             JqlRepository repository = getRepository(table);
             long count = repository.createQuery(jsFilter).count();
             return count;
+        }
+
+        @PostMapping("/{table}/schema")
+        @ResponseBody
+        @Operation(summary = "엔터티 속성 정보 요약")
+        public String schema(@PathVariable("table") String table) {
+            JqlRepository repository = getRepository(table);
+            String schema = JsUtil.getSimpleSchema(repository.getSchema());
+            return schema;
         }
     }
 
@@ -98,13 +114,15 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "전체 목록")
         @Transactional
         @ResponseBody
-        default Response list(@PathVariable("table") String table,
-                              @RequestParam(value = "select", required = false) String select$,
-                              @RequestParam(value = "sort", required = false) @Schema(implementation = String.class) String[] orders) throws Exception {
+        default Response list(
+                @PathVariable("table") String table,
+                @RequestParam(value = "select", required = false) String select,
+                @Schema(implementation = String.class)
+                @RequestParam(value = "sort", required = false) String[] orders,
+                @RequestParam(value = "page", required = false) Integer page,
+                @RequestParam(value = "limit", required = false) Integer limit) throws Exception {
             JqlRepository repository = getRepository(table);
-            JqlSelect select = JqlSelect.of(select$);
-            Sort sort = JqlRestApi.buildSort(orders);
-            return Response.of(repository.findAll(select, sort), select);
+            return search(repository, select, orders, page, limit, null);
         }
     }
 
@@ -115,9 +133,10 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "엔터티 추가")
         @Transactional
         @ResponseBody
-        default <ENTITY> ENTITY add(@PathVariable("table") String table,
-                           @Schema(implementation = Object.class)
-                           @RequestBody Map<String, Object> properties) throws Exception {
+        default <ENTITY> ENTITY add(
+                @PathVariable("table") String table,
+                @Schema(implementation = Object.class)
+                @RequestBody Map<String, Object> properties) throws Exception {
             JqlRepository repository = getRepository(table);
             Object id = repository.insert(properties);
             return (ENTITY)repository.find(id);
@@ -130,12 +149,18 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "엔터티 내용 변경")
         @Transactional
         @ResponseBody
-        default <ENTITY, ID> Collection<ENTITY> update(@PathVariable("table") String table,
-                               @Schema(type = "string", required = true) @PathVariable("idList") Collection<ID> idList,
-                               @RequestBody Map<String, Object> properties) throws Exception {
+        default <ENTITY, ID> Collection<ENTITY> update(
+                @PathVariable("table") String table,
+                @Schema(type = "string", required = true)
+                @PathVariable("idList") Collection<ID> idList,
+                @RequestParam(value = "select", required = false) String select$,
+                @Schema(implementation = Object.class)
+                @RequestBody Map<String, Object> properties) throws Exception {
+            JqlSelect select = JqlSelect.of(select$);
             JqlRepository repository = getRepository(table);
             repository.update(idList, properties);
-            return repository.find(idList);
+            List<ENTITY> res = repository.find(idList, select);
+            return (Collection<ENTITY>) Response.of(res, select);
         }
     }
 
@@ -144,8 +169,10 @@ public interface JqlStorageController extends JqlRestApi {
         @Operation(summary = "엔터티 삭제")
         @Transactional
         @ResponseBody
-        default <ID> Collection<ID> delete(@PathVariable("table") String table,
-                                      @PathVariable("idList") Collection<ID> idList) {
+        default <ID> Collection<ID> delete(
+                @PathVariable("table") String table,
+                @Schema(implementation = String.class)
+                @PathVariable("idList") Collection<ID> idList) {
             JqlRepository repository = getRepository(table);
             repository.delete(idList);
             return idList;
