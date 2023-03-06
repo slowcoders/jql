@@ -37,7 +37,6 @@
     </div>
     <p/>
     <br>
->>>>>>> Stashed changes
   </div>
 </template>
 

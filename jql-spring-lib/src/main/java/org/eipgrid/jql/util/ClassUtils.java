@@ -1,5 +1,7 @@
 package org.eipgrid.jql.util;
 
+import org.eipgrid.jql.jpa.JpaUtils;
+
 import javax.persistence.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -7,6 +9,7 @@ import java.util.*;
 
 public class ClassUtils {
     private static HashMap<Class<?>, Object[]> emptyArrays = new HashMap<>();
+    private static Class jpaColumnAnnotationClass = findClassOrNull("javax.persistence.Column");
 
     public static Collection asCollection(Object obj) {
         if (obj instanceof Collection) {
@@ -17,6 +20,16 @@ public class ClassUtils {
         }
         return null;
     }
+
+    public static Class findClassOrNull(String className) {
+        try {
+            Class c = (Class)Class.forName(className);
+            return c;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 
     public static <T> T newInstanceOrNull(String className) {
         try {
@@ -144,10 +157,14 @@ public class ClassUtils {
     }
 
     public static boolean resolveNullable(Field f) {
-        Column column = f.getAnnotation(Column.class);
-        if (column != null) return column.nullable();
         for (Annotation a : f.getAnnotations()) {
-            if (a.annotationType().getSimpleName().contains("NotNull")) {
+            Class clazz = a.annotationType();
+            if (clazz == jpaColumnAnnotationClass) {
+                if (!JpaUtils.isNullable(f, true)) {
+                    return false;
+                }
+            }
+            else if (clazz.getSimpleName().endsWith("NotNull")) {
                 return false;
             }
         }

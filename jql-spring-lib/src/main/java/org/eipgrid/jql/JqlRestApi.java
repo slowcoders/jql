@@ -1,11 +1,17 @@
 package org.eipgrid.jql;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import org.springframework.data.domain.Sort;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.persistence.Entity;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,9 +69,25 @@ public interface JqlRestApi {
             this.metadata.put(key, value);
         }
 
-        private static class JpaFilter extends Response {
-            public JpaFilter(Object content, Map<String, Object> resultMappings) {
+        @JsonSerialize(using = JpaFilter.Serializer.class)
+        public static class JpaFilter extends Response {
+            public static final String JQL_RESULT_MAPPING_KEY = "jql-result-mapping";
+
+            /*internal*/ JpaFilter(Object content, Map<String, Object> resultMappings) {
                 super(content, resultMappings);
+            }
+
+            static class Serializer extends StdSerializer<JpaFilter> {
+                protected Serializer() {
+                    super(JqlRestApi.Response.JpaFilter.class);
+                }
+
+                @Override
+                public void serialize(JqlRestApi.Response.JpaFilter value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+                    provider.setAttribute(JQL_RESULT_MAPPING_KEY, value.getResultMapping());
+                    JsonSerializer<Object> s = provider.findValueSerializer(JqlRestApi.Response.class);
+                    s.serialize(value, gen, provider);
+                }
             }
         }
     }

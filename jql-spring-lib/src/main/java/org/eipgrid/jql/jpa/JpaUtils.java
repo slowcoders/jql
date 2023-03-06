@@ -66,4 +66,16 @@ public interface JpaUtils {
         }
         return null;
     }
+
+    static boolean isNullable(Field f, boolean defaultValue) {
+        Column column = f.getAnnotation(Column.class);
+        if (column != null) return column.nullable();
+        return defaultValue;
+    }
+
+    public static boolean isJpaEntityType(Class<?> clazz) {
+        return clazz.getAnnotation(Entity.class) != null ||
+                clazz.getAnnotation(MappedSuperclass.class) != null ||
+                clazz.getAnnotation(Embeddable.class) != null;
+    }
 }

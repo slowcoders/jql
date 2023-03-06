@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 public enum JsType {
@@ -42,48 +43,51 @@ public enum JsType {
         return JsType.of(javaType);
     }
 
+    static HashMap<Class, JsType> typeMap = new HashMap<>();
+    
+    static {
+        typeMap.put(java.sql.Timestamp.class, JsType.Timestamp);
+        typeMap.put(java.util.Date.class, JsType.Timestamp);
+        typeMap.put(OffsetDateTime.class, JsType.Timestamp);
+        typeMap.put(Instant.class, JsType.Timestamp);
+        typeMap.put(ZonedDateTime.class, JsType.Timestamp);
 
+        typeMap.put(java.sql.Time.class, JsType.Time);
+        typeMap.put(java.sql.Date.class, JsType.Time);
+
+        typeMap.put(boolean.class, JsType.Boolean);
+        typeMap.put(byte.class, JsType.Integer);
+        typeMap.put(char.class, JsType.Integer);
+        typeMap.put(short.class, JsType.Integer);
+        typeMap.put(int.class, JsType.Integer);
+        typeMap.put(long.class, JsType.Integer);
+        typeMap.put(float.class, JsType.Float);
+        typeMap.put(double.class, JsType.Float);
+
+        typeMap.put(Boolean.class, JsType.Boolean);
+        typeMap.put(Byte.class, JsType.Integer);
+        typeMap.put(Character.class, JsType.Integer);
+        typeMap.put(Short.class, JsType.Integer);
+        typeMap.put(Integer.class, JsType.Integer);
+        typeMap.put(Long.class, JsType.Integer);
+        typeMap.put(Float.class, JsType.Float);
+        typeMap.put(Double.class, JsType.Float);
+        
+        typeMap.put(String.class, JsType.Text);
+    }
+    
     public static JsType of(Class javaType) {
-        if (javaType.getAnnotation(MappedSuperclass.class) != null
-                ||  javaType.getAnnotation(Embeddable.class) != null) {
-            return JsType.Object;
-        }
-        if (javaType == Object.class ||
-                JsonNode.class.isAssignableFrom(javaType) ||
-                Map.class.isAssignableFrom(javaType)) {
-            return JsType.Object;
-        }
-        if (java.util.Collection.class.isAssignableFrom(javaType)) {
+        if (javaType.isArray() || java.util.Collection.class.isAssignableFrom(javaType)) {
             return JsType.Array;
         }
-        if (javaType == java.sql.Timestamp.class) {
-            return JsType.Timestamp;
+        
+        if (Map.class.isAssignableFrom(javaType)) {
+            return JsType.Object;
         }
-        if (javaType == java.util.Date.class) {
-            return JsType.Timestamp;
-        }
-        if (javaType == OffsetDateTime.class) {
-            return JsType.Timestamp;
-        }
-        if (javaType == Instant.class || javaType == ZonedDateTime.class) {
-            return JsType.Timestamp;
-        }
-
-        if (javaType == java.sql.Time.class) {
-            return JsType.Time;
-        }
-        if (javaType == java.sql.Date.class) {
-            return JsType.Date;
-        }
-
-        javaType = ClassUtils.getBoxedType(javaType);
-        if (javaType == Boolean.class || Number.class.isAssignableFrom(javaType)) {
-            if (javaType == Float.class || javaType == Double.class) {
-                return JsType.Float;
-            }
-            return JsType.Integer;
-        }
-        return javaType == String.class ? JsType.Text : JsType.Object;
+        
+        JsType type = typeMap.get(javaType);
+        if (type == null) type = JsType.Object;
+        return type;
     }
 
 }

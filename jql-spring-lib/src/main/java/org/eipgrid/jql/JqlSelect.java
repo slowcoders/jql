@@ -62,13 +62,13 @@ public class JqlSelect {
             int ch = select.charAt(idx);
             switch (ch) {
                 case '(':
-                    key = select.substring(start, idx).trim();
-                    if (key.charAt(key.length()-1) != '.') {
-                        key += '.';
-                    }
+                    key = select.substring(start, idx);
+                    int key_last = idx - start - 1;
+                    if (key.charAt(key_last) == '.') key = key.substring(0, key_last);
+                    key = key.trim();
                     HashMap<String, Object> subMap = new HashMap<>();
                     map.put(key, subMap);
-                    idx = parsePropertySelection(subMap, base + key, idx + 1, select);
+                    idx = parsePropertySelection(subMap, base + key + '.', idx + 1, select);
                     start = idx + 1;
                     break;
 
