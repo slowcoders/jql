@@ -55,6 +55,25 @@ public class JqlSelect {
             throw new IllegalArgumentException("Syntax error at " + idx + ": [" + selector  + "]");
         }
     }
+
+    private HashMap<String, Object> makeSubMap(HashMap<String, Object> base, String key) {
+        int p = key.indexOf('.');
+        if (p > 0) {
+            String subKey = key.substring(0, p);
+            base = makeSubMap(base, subKey);
+            key = key.substring(p + 1).trim();
+            if (key.length() == 0) {
+                return base;
+            }
+        }
+        HashMap<String, Object> subMap = (HashMap<String, Object>) base.get(key);
+        if (subMap == null) {
+            subMap = new HashMap<>();
+            base.put(key, subMap);
+        }
+        return subMap;
+    }
+
     private int parsePropertySelection(HashMap<String, Object> map, String base, int start, String select) {
         String key;
         int idx;
@@ -63,11 +82,7 @@ public class JqlSelect {
             switch (ch) {
                 case '(':
                     key = select.substring(start, idx);
-                    int key_last = idx - start - 1;
-                    if (key.charAt(key_last) == '.') key = key.substring(0, key_last);
-                    key = key.trim();
-                    HashMap<String, Object> subMap = new HashMap<>();
-                    map.put(key, subMap);
+                    HashMap<String, Object> subMap = makeSubMap(map, key);
                     idx = parsePropertySelection(subMap, base + key + '.', idx + 1, select);
                     start = idx + 1;
                     break;
@@ -77,7 +92,7 @@ public class JqlSelect {
 
                 case ',':
                     key = select.substring(start, idx).trim();
-                    map.put(key, Collections.EMPTY_MAP);
+                    makeSubMap(map, key);
                     propertyNames.add(base + key);
                     start = idx + 1;
                     break;
@@ -86,7 +101,7 @@ public class JqlSelect {
         if (start < idx) {
             key = select.substring(start, idx).trim();
             if (key.length() > 0) {
-                map.put(key, Collections.EMPTY_MAP);
+                makeSubMap(map, key);
                 propertyNames.add(base + key);
             }
         }
