@@ -27,9 +27,8 @@
          run: | 
           sh ../db/start_postgres.sh
           ./gradlew build
-          nohup java -jar build/libs/sample-app.jar &
+          nohup java -jar -Dspring.profiles.active=demo build/libs/sample-app.jar &
           sleep 1
-
        - name: Run jest integration tests
          working-directory: tutorial+test
          run: |
