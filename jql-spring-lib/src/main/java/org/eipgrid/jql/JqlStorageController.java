@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.eipgrid.jql.js.JsUtil;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 public interface JqlStorageController extends JqlRestApi {
 
-    JqlRepository getRepository(String tableName);
+    JqlEntitySet getRepository(String tableName);
 
     class Search implements JqlStorageController {
         private final JqlStorage storage;
@@ -35,9 +34,9 @@ public interface JqlStorageController extends JqlRestApi {
             return storage;
         }
 
-        public JqlRepository getRepository(String tableName) {
+        public JqlEntitySet getRepository(String tableName) {
             String tablePath = tableNamePrefix + tableName;
-            return storage.getRepository(tablePath);
+            return storage.getEntitySet(tablePath);
         }
 
         @GetMapping(path = "/")
@@ -59,7 +58,7 @@ public interface JqlStorageController extends JqlRestApi {
                 @Schema(implementation = String.class)
                 @PathVariable("id") Object id,
                 @RequestParam(value = "select", required = false) String select$) {
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             JqlSelect select = JqlSelect.of(select$);
             Object res = repository.find(id, select);
             if (res == null) {
@@ -81,7 +80,7 @@ public interface JqlStorageController extends JqlRestApi {
                 @RequestParam(value = "limit", required = false) Integer limit,
                 @Schema(implementation = Object.class)
                 @RequestBody Map<String, Object> filter) {
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             return search(repository, select, orders, page, limit, filter);
         }
 
@@ -93,19 +92,19 @@ public interface JqlStorageController extends JqlRestApi {
                 @PathVariable("table") String table,
                 @Schema(implementation = Object.class)
                 @RequestBody HashMap<String, Object> jsFilter) {
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             long count = repository.createQuery(jsFilter).count();
             return count;
         }
 
-        @PostMapping("/{table}/schema")
-        @ResponseBody
-        @Operation(summary = "엔터티 속성 정보 요약")
-        public String schema(@PathVariable("table") String table) {
-            JqlRepository repository = getRepository(table);
-            String schema = JsUtil.getSimpleSchema(repository.getSchema());
-            return schema;
-        }
+//        @PostMapping("/{table}/schema")
+//        @ResponseBody
+//        @Operation(summary = "엔터티 속성 정보 요약")
+//        public String schema(@PathVariable("table") String table) {
+//            JqlEntitySet repository = getRepository(table);
+//            String schema = JsUtil.getSimpleSchema(repository.getSchema());
+//            return schema;
+//        }
     }
 
     interface ListAll extends JqlStorageController {
@@ -121,7 +120,7 @@ public interface JqlStorageController extends JqlRestApi {
                 @RequestParam(value = "sort", required = false) String[] orders,
                 @RequestParam(value = "page", required = false) Integer page,
                 @RequestParam(value = "limit", required = false) Integer limit) throws Exception {
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             return search(repository, select, orders, page, limit, null);
         }
     }
@@ -137,9 +136,9 @@ public interface JqlStorageController extends JqlRestApi {
                 @PathVariable("table") String table,
                 @Schema(implementation = Object.class)
                 @RequestBody Map<String, Object> properties) throws Exception {
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             Object id = repository.insert(properties);
-            return (ENTITY)repository.find(id);
+            return (ENTITY)repository.find(id, null);
         }
     }
 
@@ -157,7 +156,7 @@ public interface JqlStorageController extends JqlRestApi {
                 @Schema(implementation = Object.class)
                 @RequestBody Map<String, Object> properties) throws Exception {
             JqlSelect select = JqlSelect.of(select$);
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             repository.update(idList, properties);
             List<ENTITY> res = repository.find(idList, select);
             return (Collection<ENTITY>) Response.of(res, select);
@@ -173,7 +172,7 @@ public interface JqlStorageController extends JqlRestApi {
                 @PathVariable("table") String table,
                 @Schema(implementation = String.class)
                 @PathVariable("idList") Collection<ID> idList) {
-            JqlRepository repository = getRepository(table);
+            JqlEntitySet repository = getRepository(table);
             repository.delete(idList);
             return idList;
         }

@@ -7,29 +7,34 @@ import org.eipgrid.jql.jdbc.output.ArrayRowMapper;
 import org.eipgrid.jql.jdbc.output.IdListMapper;
 import org.eipgrid.jql.jdbc.output.JsonRowMapper;
 import org.eipgrid.jql.parser.JqlFilter;
+import org.eipgrid.jql.parser.JqlParser;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
+import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 import javax.persistence.Query;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
+public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
 
     protected final JdbcStorage storage;
     private final JdbcTemplate jdbc;
+
+    protected JqlParser jqlParser;
+
     private final IdListMapper<ID> idListMapper = new IdListMapper<>(this);
 
     private static final ArrayRowMapper arrayMapper = new ArrayRowMapper();
 
-    protected JdbcTable(JdbcStorage storage, QSchema schema) {
-        super(schema, storage.getObjectMapper());
+    protected JdbcRepositoryBase(JdbcStorage storage, QSchema schema) {
+        super(schema);
         storage.registerTable(this);
+        this.jqlParser = new JqlParser(storage.getObjectMapper());
 
         this.storage = storage;
         this.jdbc = storage.getJdbcTemplate();
@@ -39,20 +44,24 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         return storage;
     }
 
-    public JqlQuery<ENTITY> createQuery(Map<String, Object> filter) {
-        JqlFilter jqlFilter = jqlParser.parse(schema, (Map)filter);
-        return new JdbcQuery(this, null, jqlFilter);
-    }
-
-    public final <T> List<T> find(Iterable<ID> idList, JqlSelect select, Class<T> entityType) {
-        List<T> res = find(new JdbcQuery(this, select, JqlFilter.of(schema, idList)), entityType);
+//    public JqlQuery createQuery(Map<String, Object> filter) {
+//        JqlFilter jqlFilter = jqlParser.parse(schema, (Map)filter);
+//        return new JdbcQuery(this, null, jqlFilter);
+//    }
+//
+    public final List<Map> find(Iterable<ID> idList, JqlSelect select) {
+        List<Map> res = find(new JdbcQuery(this, select, JqlFilter.of(schema, idList)));
         return res;
     }
-
-
-    public <T> T find(ID id, JqlSelect select, Class<T> entityType) {
-        List<T> res = find(new JdbcQuery(this, select, JqlFilter.of(schema, id)), entityType);
+    public Map find(ID id, JqlSelect select) {
+        List<Map> res = find(new JdbcQuery(this, select, JqlFilter.of(schema, id)));
         return res.size() == 0 ? null : res.get(0);
+    }
+
+    @Override
+    public JqlQuery<Map> createQuery(Map<String, Object> filter) {
+        JqlFilter jqlFilter = jqlParser.parse(schema, filter);
+        return new JdbcQuery(this, null, jqlFilter);
     }
 
 
@@ -61,18 +70,28 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         return new JsonRowMapper(filter.getResultMappings(), storage.getObjectMapper());
     }
 
-    public <T> List<T> find(JqlQuery query0, Class<T> entityType) {
+    @Override
+    public List<Map> findAll(JqlSelect select, Sort sort) {
+        return find(new JdbcQuery(this, select, null).sort(sort));
+    }
+
+    public List find(JqlQuery query0, OutputFormat outputFormat) {
+        return find(query0);
+    }
+
+    //@Override
+    public List<Map> find(JqlQuery query0) {
         JdbcQuery query = (JdbcQuery) query0;
-        boolean enableJPA = query.getFilter().isJPQLEnabled() && entityType == this.getEntityType();
-        boolean isRepeat = (query.getExecutedQuery() != null && (Boolean) enableJPA == query.getExtraInfo());
+        Class jpaEntityType = query.getJpaEntityType();
+        boolean isRepeat = (query.getExecutedQuery() != null && (Boolean)query.getExtraInfo());
 
         String sql = isRepeat ? query.getExecutedQuery() :
-                storage.createQueryGenerator(!enableJPA).createSelectQuery(query);
+                storage.createQueryGenerator(jpaEntityType == null).createSelectQuery(query);
         query.executedQuery = sql;
-        query.extraInfo = enableJPA;
+        query.extraInfo = true;
 
         List res;
-        if (enableJPA) {
+        if (jpaEntityType != null) {
             Query jpaQuery = storage.getEntityManager().createQuery(sql);
             if (query.getLimit() > 1) {
                 jpaQuery = jpaQuery.setMaxResults(query.getLimit());
@@ -86,13 +105,13 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
             sql = query.appendPaginationQuery(sql);
 
             res = jdbc.query(sql, getColumnMapRowMapper(query.getFilter()));
-            if (!RawEntityType.isAssignableFrom(entityType)) {
-                ObjectMapper converter = storage.getObjectMapper();
-                for (int i = res.size(); --i >= 0; ) {
-                    T v = (T)converter.convertValue(res.get(i), entityType);
-                    res.set(i, v);
-                }
-            }
+//            if (!RawEntityType.isAssignableFrom(entityType)) {
+//                ObjectMapper converter = storage.getObjectMapper();
+//                for (int i = res.size(); --i >= 0; ) {
+//                    T v = (T)converter.convertValue(res.get(i), entityType);
+//                    res.set(i, v);
+//                }
+//            }
         }
         return res;
     }
@@ -118,13 +137,18 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         return batch.getEntityIDs();
     }
 
-    public ENTITY insert(Map<String, Object> properties) throws IOException  {
-        ID id = insert(Collections.singletonList(properties)).get(0);
+    public ID insert_raw(Map<String, Object> properties) {
+        ID id = this.insert(Collections.singletonList(properties)).get(0);
+        return id;
+    }
+
+    public Map insert(Map<String, Object> properties) {
+        ID id = insert_raw(properties);
         return get(id);
     }
 
     @Override
-    public void update(Iterable<ID> idList, Map<String, Object> updateSet) throws IOException {
+    public void update(Iterable<ID> idList, Map<String, Object> updateSet) {
         JqlFilter filter = JqlFilter.of(schema, idList);
         String sql = storage.createQueryGenerator().createUpdateQuery(filter, updateSet);
         jdbc.update(sql);
@@ -149,7 +173,7 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         // do nothing.
     }
 
-    public ID getEntityId(ENTITY entity) {
+    public ID getEntityId(Map entity) {
         return schema.getEnityId(entity);
     }
 
@@ -174,4 +198,5 @@ public class JdbcTable<ENTITY, ID> extends JqlRepository<ENTITY, ID> {
         }
         return (ID)ids;
     }
+
 }

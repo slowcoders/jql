@@ -5,7 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import org.eipgrid.jql.JqlQuery;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.JqlEntitySetController;
+import org.eipgrid.jql.sample.jdbc.starwars.service.SecuredCharacterService;
 import org.eipgrid.jql.util.KVEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import javax.transaction.Transactional;
@@ -16,12 +18,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jql/starwars/character")
-public class CustomCharacterController extends JqlEntitySetController.CRUD<Integer> implements JqlEntitySetController.ListAll<Integer> {
+public class CustomCharacterController extends JqlEntitySetController.CRUD<Long> implements JqlEntitySetController.ListAll<Long> {
 
-    public CustomCharacterController(JqlStorage storage) {
-        super(storage.getRepository("starwars.character"));
+    private final SecuredCharacterService service;
+
+    public CustomCharacterController(SecuredCharacterService service) {
+        super(service.getCharacterEntitySet());
+        this.service = service;
     }
-
 
 
     @Override
@@ -29,8 +33,8 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
             @RequestParam(value = "select", required = false) String select,
             @Schema(implementation = String.class)
             @RequestParam(value = "sort", required = false) String[] orders,
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit,
+                         @RequestParam(value = "page", required = false) Integer page,
+                         @RequestParam(value = "limit", required = false) Integer limit,
             @Schema(implementation = Object.class)
             @RequestBody Map<String, Object> filter) {
         Response resp = super.find(select, orders, page, limit, filter);
@@ -46,7 +50,7 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
     @Override
     @Operation(summary = "엔터티 삭제 (사용 금지됨. secure-delete API 로 대체)")
     @Transactional
-    public Collection<Integer> delete(@PathVariable("idList") Collection<Integer> idList) {
+    public Collection<Long> delete(@PathVariable("idList") Collection<Long> idList) {
         throw new RuntimeException("Delete is forbidden by custom controller. Use ControlApiCustomizingDemoController.secure-delete api");
     }
 
@@ -54,13 +58,10 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
     @ResponseBody
     @Operation(summary = "엔터티 삭제 (권한 검사 기능 추가. 테스트용 AccessToken 값='1234')")
     @Transactional
-    public Collection<Integer> delete(@PathVariable("idList") Collection<Integer> idList,
+    public Collection<Long> delete(@PathVariable("idList") Collection<Long> idList,
                                      @RequestParam String accessToken) {
-        if ("1234".equals(accessToken)) {
-            return super.delete(idList);
-        } else {
-            throw new RuntimeException("Not authorized");
-        }
+        service.deleteCharacter(idList, accessToken);
+        return idList;
     }
 
     @Override
@@ -69,16 +70,8 @@ public class CustomCharacterController extends JqlEntitySetController.CRUD<Integ
     public <ENTITY> ENTITY add(
             @Schema(implementation = Object.class)
             @RequestBody Map<String, Object> properties) throws Exception {
-        if (properties.get("metadata") == null) {
-            properties.put("metadata", createNote());
-        }
-        return super.add(properties);
+        return (ENTITY) service.addNewCharacter(properties);
     }
 
-    private KVEntity createNote() {
-        KVEntity entity = new KVEntity();
-        entity.put("autoCreated", new Date());
-        return entity;
-    }
 
 }

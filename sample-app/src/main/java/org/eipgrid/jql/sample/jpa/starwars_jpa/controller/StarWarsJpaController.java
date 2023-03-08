@@ -1,10 +1,8 @@
 package org.eipgrid.jql.sample.jpa.starwars_jpa.controller;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.eipgrid.jql.JqlQuery;
-import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.JqlStorageController;
-import org.eipgrid.jql.sample.jpa.starwars_jpa.StarWarsJpaService;
+import org.eipgrid.jql.sample.jpa.starwars_jpa.service.StarWarsJpaService;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.web.bind.annotation.*;
 

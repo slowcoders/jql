@@ -1,7 +1,7 @@
 package org.eipgrid.jql.jdbc.timescale;
 
 import org.eipgrid.jql.jdbc.JdbcStorage;
-import org.eipgrid.jql.jpa.JpaTable;
+import org.eipgrid.jql.jpa.JpaAdapter;
 import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
@@ -11,15 +11,17 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.HashMap;
 
-public abstract class TSDBRepository<ENTITY, ID> extends JpaTable<ENTITY, ID> {
+public abstract class TSDBRepository<ENTITY, ID> extends JpaAdapter<ENTITY, ID> {
 
     private final String timeKeyColumnName;
+    private final JdbcStorage storage;
 
     public TSDBRepository(JdbcStorage storage, Class<ENTITY> entityType, String timeKeyColumnName) {
         super(storage, entityType);
         this.timeKeyColumnName = timeKeyColumnName;
 
-        QSchema schema = getStorage().loadSchema(getEntityType());
+        this.storage = storage;
+        QSchema schema = storage.loadSchema(getEntityType());
         try {
             new Initializer(schema).initializeTSDB(schema);
         } catch (SQLException e) {
@@ -35,7 +37,7 @@ public abstract class TSDBRepository<ENTITY, ID> extends JpaTable<ENTITY, ID> {
         private final QSchema schema;
 
         public Initializer(QSchema schema) {
-            super(getStorage(), getTableName());
+            super(storage, schema.getTableName());
             this.schema = schema;
         }
 

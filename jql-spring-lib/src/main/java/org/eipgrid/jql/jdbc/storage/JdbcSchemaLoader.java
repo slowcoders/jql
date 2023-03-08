@@ -105,7 +105,7 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         if (schema == null) {
             Class<?> ormType = ormTypeMap.get(tableName);
             if (ormType == null) {
-                ormType = JqlRepository.RawEntityType;
+                ormType = JqlRepository.rawEntityType;
             }
             TablePath tablePath = TablePath.of(tableName, this);
             schema = loadSchema(tablePath, ormType);

@@ -23,7 +23,7 @@ public abstract class QSchema {
     public QSchema(String tableName, Class<?> entityType) {
         this.tableName = tableName;
         this.entityType = entityType;
-        this.isJPASchema = !JqlRepository.RawEntityType.isAssignableFrom(entityType);
+        this.isJPASchema = !JqlRepository.rawEntityType.isAssignableFrom(entityType);
     }
 
     public abstract JqlStorage getStorage();

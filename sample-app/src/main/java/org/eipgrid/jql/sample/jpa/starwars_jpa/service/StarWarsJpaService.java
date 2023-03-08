@@ -1,4 +1,4 @@
-package org.eipgrid.jql.sample.jpa.starwars_jpa;
+package org.eipgrid.jql.sample.jpa.starwars_jpa.service;
 
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.jdbc.JdbcStorage;

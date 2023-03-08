@@ -1,25 +1,44 @@
 package org.eipgrid.jql.jpa;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eipgrid.jql.jdbc.JdbcTable;
+import org.eipgrid.jql.JqlQuery;
+import org.eipgrid.jql.JqlStorage;
+import org.eipgrid.jql.jdbc.JdbcRepositoryBase;
 import org.eipgrid.jql.jdbc.JdbcStorage;
+import org.eipgrid.jql.schema.QSchema;
 
 import javax.persistence.Cache;
 import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.*;
 
-public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
+public abstract class JpaAdapter<ENTITY, ID> extends JqlAdapter<ENTITY, ID> {
 
     private final HashMap<ID, Object> associatedCache = new HashMap<>();
+    private final EntityManager entityManager;
 
-    protected JpaTable(JdbcStorage storage, Class<ENTITY> entityType) {
-        super(storage, storage.loadSchema(entityType));
+    protected JpaAdapter(JdbcRepositoryBase<ID> repositoryBase, Class<ENTITY> entityType) {
+        super(repositoryBase, entityType);
+        this.entityManager = repositoryBase.getStorage().getEntityManager();
     }
 
-    public ENTITY insert(Map<String, Object> dataSet) throws IOException {
-        ObjectMapper converter = storage.getObjectMapper();
-        ENTITY entity = converter.convertValue(dataSet, getEntityType());
+    protected JpaAdapter(JdbcStorage storage, Class<ENTITY> entityType) {
+        super(storage, entityType);
+        this.entityManager = storage.getEntityManager();
+    }
+
+    public final QSchema getSchema() {
+        return repository.getSchema();
+    }
+
+    @Override
+    public JqlQuery<ENTITY> createQuery(Map<String, Object> jqlFilter) {
+        return (JqlQuery<ENTITY>)repository.createQuery(jqlFilter);
+    }
+
+    public ENTITY insert(Map<String, Object> dataSet) {
+        ENTITY entity = super.convertToEntity(dataSet);
         ENTITY newEntity = this.insertOrUpdate(entity);
         return newEntity;
     }
@@ -33,15 +52,15 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
         List<ENTITY> result = new ArrayList<>();
 
         for (ENTITY entity : entities) {
-            result.add(insert(entity));
+            result.add(insertEntity(entity));
         }
 
         return result;
     }
 
 
-    public ENTITY insert(ENTITY entity) {
-        if (hasGeneratedId()) {
+    public ENTITY insertEntity(ENTITY entity) {
+        if (repository.hasGeneratedId()) {
             ID id = getEntityId(entity);
             if (id != null) {
                 throw new IllegalArgumentException("Entity can not be created with id");
@@ -60,8 +79,8 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
         return entity;
     }
 
-    private EntityManager getEntityManager() {
-        return getStorage().getEntityManager();
+    public final EntityManager getEntityManager() {
+        return entityManager;
     }
 
     public ENTITY update(ENTITY entity) {
@@ -69,22 +88,29 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
     }
 
     @Override
-    public void update(ID id, Map<String, Object> updateSet) throws IOException {
-        ENTITY entity = find(id);
+    public void update(ID id, Map<String, Object> updateSet) {
+        ENTITY entity = find(id, null);
         if (entity == null) {
             throw new IllegalArgumentException("Entity is not found with ID: " + id);
         }
-        getObjectMapper().updateValue(entity, updateSet);
+        try {
+            getObjectMapper().updateValue(entity, updateSet);
+        } catch (JsonMappingException e) {
+            throw new RuntimeException(e);
+        }
         update(entity);
     }
 
     private ObjectMapper getObjectMapper() {
-        return storage.getObjectMapper();
+        return objectMapper;
     }
 
+    public ID convertId(Object id) {
+        return repository.convertId(id);
+    }
 
     @Override
-    public void update(Iterable<ID> idList, Map<String, Object> updateSet) throws IOException {
+    public void update(Iterable<ID> idList, Map<String, Object> updateSet) {
         ArrayList<ENTITY> list = new ArrayList<>();
         for (ID id: idList) {
             update(id, updateSet);
@@ -153,6 +179,7 @@ public abstract class JpaTable<ENTITY, ID> extends JdbcTable<ENTITY, ID> {
     public void putAssociatedCache(ENTITY entity, Object value) {
         associatedCache.put(getEntityId(entity), value);
     }
+
 
 
 }

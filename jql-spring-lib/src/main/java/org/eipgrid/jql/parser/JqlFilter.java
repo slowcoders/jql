@@ -119,6 +119,10 @@ public class JqlFilter extends TableFilter {
     public void disableJPQL() {
         this.enableJPQL = false;
     }
+
+    public Class getJpqlEntityType() {
+        return enableJPQL ? getSchema().getEntityType() : null;
+    }
 //    public List<JQColumn> resolveSelectedColumns(TableFilter tableFilter) {
 //        if (!selectAuto) return Collections.EMPTY_LIST;
 //

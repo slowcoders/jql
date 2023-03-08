@@ -135,7 +135,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
                 }
             }
             else {
-                sw.write(fetch.getSelectedColumns().size() > 0 ? " join fetch " : " join ");
+                sw.write((fetch.getSelectedColumns().size() > 0 || fetch.hasChildMappings()) ? " join fetch " : " join ");
                 sw.write(parentAlias).write('.').write(join.getJsonKey()).write(" ").write(alias).write("\n");
             }
         }

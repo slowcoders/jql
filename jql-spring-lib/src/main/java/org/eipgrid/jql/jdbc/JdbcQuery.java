@@ -11,16 +11,26 @@ import java.util.List;
 public class JdbcQuery<ENTITY> extends JqlQuery<ENTITY> {
 
     //protected static int SingleEntityOffset = JqlQuery.SingleEntityOffset;
-    private final JdbcTable table;
+    private final JdbcRepositoryBase table;
     private final JqlFilter filter;
+    private Class<ENTITY> jpaEntityType;
 
     /*package*/ String executedQuery;
     /*package*/ Object extraInfo;
 
-    public JdbcQuery(JdbcTable table, JqlSelect select, JqlFilter jqlFilter) {
+    public JdbcQuery(JdbcRepositoryBase table, JqlSelect select, JqlFilter jqlFilter) {
         this.table = table;
         this.filter = jqlFilter;
         super.select(select);
+    }
+
+    public JdbcQuery(JdbcRepositoryBase table, JqlSelect select, JqlFilter jqlFilter, Class<ENTITY> jpaEntityType) {
+        this(table, select, jqlFilter);
+        this.jpaEntityType = jpaEntityType;
+    }
+
+    public final Class<ENTITY> getJpaEntityType() {
+        return filter.getJpqlEntityType();
     }
 
     @Override

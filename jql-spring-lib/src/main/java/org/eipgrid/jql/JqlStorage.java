@@ -1,8 +1,10 @@
 package org.eipgrid.jql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eipgrid.jql.jpa.JpaAdapter;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.util.CaseConverter;
+import org.eipgrid.jql.util.KVEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -31,9 +33,11 @@ public abstract class JqlStorage {
     }
 
 
-    public abstract JqlRepository getRepository(String tableName);
+    public abstract <ID> JqlRepository<ID> getRepository(String tableName);
 
-    public abstract <T, ID> JqlRepository<T, ID> getRepository(Class<T> entityType);
+    public abstract <T, ID> JqlEntitySet<T, ID> getEntitySet(String tableName);
+
+    public abstract <T, ID> JpaAdapter<T, ID> getRepository(Class<T> entityType);
 
     public abstract QSchema loadSchema(String tableName);
 
