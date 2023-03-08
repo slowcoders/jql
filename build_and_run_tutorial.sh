@@ -8,6 +8,6 @@ npm run build
 popd
 
 pushd sample-app
-./gradlew bootRun --console=plain
+./gradlew bootRun --console=plain --args='--spring.profiles.active=demo'
 popd
 

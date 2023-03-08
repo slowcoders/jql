@@ -3,8 +3,6 @@ logging:
     sql: debug
     jdbc: debug
     jdbc.sqlonly: debug
-    org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql: debug
     org:
       springframework:
         web:
@@ -29,33 +27,22 @@ server:
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript
 
 
-database: postgresql
-
 springdoc:
   swagger-ui.tagsSorter: alpha
 
 spring:
-  sql.init:
-      mode: always
-      schema-locations: classpath*:db/${database}/starwars-schema.sql
-      data-locations: classpath*:db/${database}/starwars-data.sql
-  session:
-    store-type: none  # Session 저장 유형 StoreType 참조.
-    timeout: 3600     # Session timeout.
-
-
   datasource:
-    url: ${DB_URL:jdbc:${database}://localhost/jql_demo}
-    username: ${DB_USER:jql_demo}
-    password: ${DB_PASS:jql_demo}
+    url: Enter-JDBC-URL ex) jdbc:postresql://localhost/jql_demo}
+    username: Enter-DB-UserName
+    password: Enter-DB-Password
 
   jpa:
-#    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
-      # open-in-view: true(=default) 인 경우, 모든 Controller API 가 자동적으로 Transaction 을 생성한다.
-      #               단, API 실행에 긴 시간이 걸리는 경우, 그 시간만큼 DB Connection 을 유지하는 단점이 있다.
-      #               일반적인 상황에서는 true를 사용한다.
-      # open-in-view: false 로 변경하면, 명시적인 @Transactional 설정이 필요하다.
+    #    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    #    show-sql: true
+    # open-in-view: true(=default) 인 경우, 모든 Controller API 가 자동적으로 Transaction 을 생성한다.
+    #               단, API 실행에 긴 시간이 걸리는 경우, 그 시간만큼 DB Connection 을 유지하는 단점이 있다.
+    #               일반적인 상황에서는 true를 사용한다.
+    # open-in-view: false 로 변경하면, 명시적인 @Transactional 설정이 필요하다.
     open-in-view: true
     hibernate:
       ddl-auto: update

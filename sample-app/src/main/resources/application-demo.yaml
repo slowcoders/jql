@@ -1,0 +1,18 @@
+
+database: postgresql
+
+spring:
+  sql.init:
+    mode: always
+    schema-locations: classpath*:db/${database}/starwars-schema.sql
+    data-locations: classpath*:db/${database}/starwars-data.sql
+  session:
+    store-type: none  # Session 저장 유형 StoreType 참조.
+    timeout: 3600     # Session timeout.
+
+
+  datasource:
+    url: ${DB_URL:jdbc:${database}://localhost/jql_demo}
+    username: ${DB_USER:jql_demo}
+    password: ${DB_PASS:jql_demo}
+
