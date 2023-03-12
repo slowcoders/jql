@@ -147,7 +147,7 @@ public class ClassUtils {
 
     public static void getFields(List<Field> columns, Class entityType, int excludeModifier) {
         Class<?> superClass = entityType.getSuperclass();
-        if (superClass != Object.class) {
+        if (superClass != null && superClass != Object.class) {
             getFields(columns, superClass, excludeModifier);
         }
         for (Field f : entityType.getDeclaredFields()) {

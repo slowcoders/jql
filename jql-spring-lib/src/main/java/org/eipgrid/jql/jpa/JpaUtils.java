@@ -27,20 +27,39 @@ public interface JpaUtils {
     static List<Field> getColumnFields(Class<?> clazz) {
         ArrayList<Field> fields = new ArrayList<Field>() {
             public boolean add(Field f) {
-                OneToMany o2m; OneToOne o2o; ManyToMany m2m; ManyToOne m2o;
-
                 if (f.getAnnotation(Transient.class) != null) return false;
-
-                if (((((o2m = f.getAnnotation(OneToMany.class))) != null) && (o2m.mappedBy().length() > 0)) ||
-                        ((((o2o = f.getAnnotation(OneToOne.class))) != null) && (o2o.mappedBy().length() > 0)) ||
-                        ((((m2m = f.getAnnotation(ManyToMany.class))) != null) && (m2m.mappedBy().length() > 0))) {
-                    return false;
-                }
+                if (isMappedField(f)) return false;
                 return super.add(f);
             }
         };
         ClassUtils.getFields(fields, clazz, Modifier.STATIC | Modifier.TRANSIENT);
         return fields;
+    }
+
+    static ArrayList<Field> getMappedFields(Class<?> clazz) {
+        ArrayList<Field> fields = new ArrayList<Field>() {
+            public boolean add(Field f) {
+                if (f.getAnnotation(Transient.class) != null) return false;
+                if (!isMappedField(f)) return false;
+                return super.add(f);
+            }
+        };
+        ClassUtils.getFields(fields, clazz, Modifier.STATIC | Modifier.TRANSIENT);
+        return fields;
+    }
+
+    static boolean isMappedField(Field f) {
+        if (f.getAnnotation(JoinColumn.class) != null) return false;
+
+        JoinTable jt;
+        if ((jt = f.getAnnotation(JoinTable.class)) != null) {
+            return true;
+        }
+
+        OneToMany o2m; OneToOne o2o; ManyToMany m2m; ManyToOne m2o;
+        return  (((o2m = f.getAnnotation(OneToMany.class))) != null && o2m.mappedBy().length() > 0) ||
+                (((o2o = f.getAnnotation(OneToOne.class))) != null) && (o2o.mappedBy().length() > 0) ||
+                (((m2m = f.getAnnotation(ManyToMany.class))) != null) && (m2m.mappedBy().length() > 0);
     }
 
     static List<Field> getCacheableFields(Class<?> clazz) {
@@ -77,5 +96,26 @@ public interface JpaUtils {
         return clazz.getAnnotation(Entity.class) != null ||
                 clazz.getAnnotation(MappedSuperclass.class) != null ||
                 clazz.getAnnotation(Embeddable.class) != null;
+    }
+
+    static String getPhysicalColumnNameOrNull(Field f) {
+        String colName = null;
+        if (true) {
+            Column c = f.getAnnotation(Column.class);
+            if (c != null) {
+                colName = c.name();
+            }
+        }
+        if (true) {
+            JoinColumn c = f.getAnnotation(JoinColumn.class);
+            if (c != null) {
+                colName = c.name();
+            }
+        }
+
+        if (colName != null && colName.length() > 0) {
+            return colName;
+        }
+        return null;
     }
 }

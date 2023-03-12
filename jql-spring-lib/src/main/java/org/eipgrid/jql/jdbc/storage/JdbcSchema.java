@@ -8,10 +8,7 @@ import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
 import org.eipgrid.jql.util.SourceWriter;
 
-import javax.persistence.Column;
 import javax.persistence.IdClass;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -21,7 +18,7 @@ public class JdbcSchema extends QSchema {
     private final JdbcSchemaLoader schemaLoader;
 
     private HashMap<String, ArrayList<String>> uniqueConstraints = new HashMap<>();
-    private final HashMap<String, List<QColumn>> fkConstraints = new HashMap<>();
+    private final HashMap<String, JoinConstraint> fkConstraints = new HashMap<>();
 
     private Map<String, QJoin> entityJoinMap;
     private ArrayList<QColumn> unresolvedJpaColumns;
@@ -62,9 +59,9 @@ public class JdbcSchema extends QSchema {
             }
         }
         super.init(columns, ormType);
-        this.importedByFkJoinMap = new JoinMap();
-        for (List<QColumn> fkColumns : this.fkConstraints.values()) {
-            importedByFkJoinMap.add(this, fkColumns, null);
+        this.importedByFkJoinMap = new JoinMap(this);
+        for (JoinConstraint fkColumns : this.fkConstraints.values()) {
+            importedByFkJoinMap.addImportedJoin(fkColumns);
         }
     }
 
@@ -209,7 +206,7 @@ public class JdbcSchema extends QSchema {
 
     private void dumpJoinedColumn(QJoin join, SourceWriter sb) {
         boolean isInverseJoin = join.isInverseMapped();
-        QColumn firstFk = join.getForeignKeyColumns().get(0);
+        QColumn firstFk = join.getJoinConstraint().get(0);
         if (isInverseJoin && join.getAssociativeJoin() == null && firstFk.getSchema().hasOnlyForeignKeys()) {
             return;
         }
@@ -218,10 +215,10 @@ public class JdbcSchema extends QSchema {
         boolean isUniqueJoin = join.hasUniqueTarget();
         boolean isArrayJoin = isInverseJoin && !isUniqueJoin;
 
-        if (!isInverseJoin && join.getForeignKeyColumns().size() == 1) {
+        if (!isInverseJoin && join.getJoinConstraint().size() == 1) {
             QColumn col = firstFk;
-            if (join.getAssociativeJoin() != null && join.getAssociativeJoin().getForeignKeyColumns().size() == 1) {
-                col = join.getAssociativeJoin().getForeignKeyColumns().get(0);
+            if (join.getAssociativeJoin() != null && join.getAssociativeJoin().getJoinConstraint().size() == 1) {
+                col = join.getAssociativeJoin().getJoinConstraint().get(0);
             }
             if (col.getLabel() != null) {
                 sb.write("/** ");
@@ -253,8 +250,9 @@ public class JdbcSchema extends QSchema {
             sb.decTab();
         }
         else if (join.getAssociativeJoin() != null) {
-            sb.write("@JoinTable(name = ").writeQuoted(join.getLinkedSchema().getSimpleName()).write(", ");
-            String namespace = join.getLinkedSchema().getNamespace();
+            QSchema associateSchema = join.getLinkedSchema();
+            sb.write("@JoinTable(name = ").writeQuoted(associateSchema.getSimpleName()).write(", ");
+            String namespace = associateSchema.getNamespace();
             if (namespace != null) {
                 sb.write("schema = ").writeQuoted(namespace).write(", ");
                 sb.write("catalog = ").writeQuoted(namespace).write(",");
@@ -265,7 +263,7 @@ public class JdbcSchema extends QSchema {
                 ((JdbcSchema)firstFk.getSchema()).dumpUniqueConstraints(sb);
             }
             sb.write("joinColumns = @JoinColumn(name=").writeQuoted(firstFk.getPhysicalName()).write("), ");
-            sb.write("inverseJoinColumns = @JoinColumn(name=").writeQuoted(join.getAssociativeJoin().getForeignKeyColumns().get(0).getPhysicalName()).write("))\n");
+            sb.write("inverseJoinColumns = @JoinColumn(name=").writeQuoted(join.getAssociativeJoin().getJoinConstraint().get(0).getPhysicalName()).write("))\n");
             sb.decTab();
         }
 
@@ -287,8 +285,8 @@ public class JdbcSchema extends QSchema {
     }
 
     private String getFKConstraintName(QColumn fk) {
-        for (Map.Entry<String, List<QColumn>> constraint : fkConstraints.entrySet()) {
-            List<QColumn> cols = constraint.getValue();
+        for (Map.Entry<String, JoinConstraint> constraint : fkConstraints.entrySet()) {
+            JoinConstraint cols = constraint.getValue();
             if (cols.contains(fk)) {
                 return constraint.getKey();
             }
@@ -367,25 +365,25 @@ public class JdbcSchema extends QSchema {
     protected QJoin getJoinByForeignKeyConstraints(String fkConstraint) {
         List<QColumn> fkColumns = this.fkConstraints.get(fkConstraint);
         for (QJoin join : this.importedByFkJoinMap.values()) {
-            if (join.getForeignKeyColumns() == fkColumns) {
+            if (join.getJoinConstraint() == fkColumns) {
                 assert(join.getBaseSchema() == this && !join.isInverseMapped());
                 return join;
             }
         }
         for (QJoin join : this.importedByFkJoinMap.values()) {
-            QSchema schema = join.getLinkedSchema();// getForeignKeyColumns().get(0).getSchema();
+            QSchema schema = join.getTargetSchema();// getForeignKeyColumns().get(0).getSchema();
             System.out.println(schema.getTableName());
         }
         throw new Error("fk join not found: " + fkConstraint);
     }
 
-    HashMap<String, List<QColumn>> getForeignKeyConstraints() {
+    HashMap<String, JoinConstraint> getForeignKeyConstraints() {
         return this.fkConstraints;
     }
     protected void addForeignKeyConstraint(String fk_name, JdbcColumn fkColumn) {
-        List<QColumn> fkColumns = fkConstraints.get(fk_name);
+        JoinConstraint fkColumns = fkConstraints.get(fk_name);
         if (fkColumns == null) {
-            fkColumns = new ArrayList<>();
+            fkColumns = new JoinConstraint(this, fk_name);
             fkColumns.add(fkColumn);
             fkConstraints.put(fk_name, fkColumns);
         } else {
@@ -394,39 +392,10 @@ public class JdbcSchema extends QSchema {
     }
 
     private String resolvePhysicalName(Field f) {
-        if (true) {
-            Column c = f.getAnnotation(Column.class);
-            if (c != null) {
-                String colName = c.name();
-                if (colName != null && colName.length() > 0) {
-                    return colName;
-                }
-            }
+        String colName = JpaUtils.getPhysicalColumnNameOrNull(f);
+        if (colName == null) {
+            colName = schemaLoader.toPhysicalColumnName(f.getName());
         }
-        if (true) {
-            JoinColumn c = f.getAnnotation(JoinColumn.class);
-            if (c != null) {
-                String colName = c.name();
-                if (colName != null && colName.length() > 0) {
-                    return colName;
-                }
-            }
-        }
-        if (true) {
-            JoinTable c = f.getAnnotation(JoinTable.class);
-            if (c != null) {
-                JoinColumn[] joinColumns = c.joinColumns();
-                if (joinColumns.length == 1) {
-                    String colName = joinColumns[0].name();
-                    if (colName != null && colName.length() > 0) {
-                        return colName;
-                    } else {
-                        throw new RuntimeException("MultiKey join not implemented");
-                    }
-                }
-            }
-        }
-        String colName = schemaLoader.toPhysicalColumnName(f.getName());
         return colName;
     }
 

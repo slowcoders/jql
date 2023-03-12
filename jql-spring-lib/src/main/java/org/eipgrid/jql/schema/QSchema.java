@@ -228,4 +228,8 @@ public abstract class QSchema {
 
     public abstract <ID, ENTITY> ID getEnityId(ENTITY entity);
 
+    public final boolean hasProperty(String name) {
+        return this.findColumn(name) != null ||
+                this.getEntityJoinBy(name) != null;
+    }
 }

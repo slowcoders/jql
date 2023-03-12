@@ -150,7 +150,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         boolean isInverseMapped = join.isInverseMapped();
         String mediateTable = join.getLinkedSchema().getTableName();
         sw.write("\nleft join ").write(mediateTable).write(" as ").write(alias).write(" on\n\t");
-        for (QColumn fk : join.getForeignKeyColumns()) {
+        for (QColumn fk : join.getJoinConstraint()) {
             QColumn anchor, linked;
             if (isInverseMapped) {
                 linked = fk; anchor = fk.getJoinedPrimaryColumn();

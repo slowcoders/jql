@@ -29,7 +29,7 @@ public class JsUtil {
             }
             for (Map.Entry<String, QJoin> entry : schema.getEntityJoinMap().entrySet()) {
                 sb.append("  jql.externalJoin(\"").append(entry.getKey()).append("\", ");
-                sb.append(entry.getValue().getLinkedSchema().getSimpleName()).append("Schema, ");
+                sb.append(entry.getValue().getTargetSchema().getSimpleName()).append("Schema, ");
                 sb.append(entry.getValue().hasUniqueTarget() ? "Object" : "Array").append("),\n");
             }
             sb.append("];\n");

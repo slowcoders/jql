@@ -112,7 +112,7 @@ class TableFilter extends EntityFilter implements QResultMapping {
             if (table == null) continue;
             if (!table.join.isInverseMapped()) {
                 if (hiddenColumns == Collections.EMPTY_SET) hiddenColumns = new HashSet<>();
-                List<QColumn> fkColumns = table.join.getForeignKeyColumns();
+                List<QColumn> fkColumns = table.join.getJoinConstraint();
                 assert (fkColumns.get(0).getSchema() == this.schema);
                 hiddenColumns.addAll(fkColumns);
             }

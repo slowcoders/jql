@@ -1,11 +1,11 @@
 package org.eipgrid.jql.schema;
 
+import org.eipgrid.jql.jdbc.storage.JoinConstraint;
 import org.eipgrid.jql.jpa.JpaUtils;
 import org.eipgrid.jql.util.ClassUtils;
 
 import javax.persistence.Entity;
 import java.lang.reflect.Field;
-import java.util.List;
 
 public class QJoin {
 
@@ -13,7 +13,7 @@ public class QJoin {
     private final QJoin associateJoin;
     private String jsonKey;
     private final boolean inverseMapped;
-    private final List<QColumn> fkColumns;
+    private final JoinConstraint fkColumns;
     private final QSchema baseSchema;
 
     public enum Type {
@@ -23,15 +23,15 @@ public class QJoin {
         ManyToMany
     }
 
-    public QJoin(QSchema baseSchema, List<QColumn> fkColumns) {
+    public QJoin(QSchema baseSchema, JoinConstraint fkColumns) {
         this(baseSchema, fkColumns, null);
     }
 
-    public QJoin(QSchema baseSchema, List<QColumn> fkColumns, QJoin associateJoin) {
+    public QJoin(QSchema baseSchema, JoinConstraint fkColumns, QJoin associateJoin) {
         this.fkColumns = fkColumns;
         this.baseSchema = baseSchema;
         this.associateJoin = associateJoin;
-        QSchema fkSchema = fkColumns.get(0).getSchema();
+        QSchema fkSchema = fkColumns.getFkSchema();
         this.inverseMapped = baseSchema != fkSchema;
         boolean uniqueBase;
         boolean uniqueTarget;
@@ -57,9 +57,8 @@ public class QJoin {
         this.jsonKey = key;
     }
 
-    private boolean isRecursiveJoin() {
-        return associateJoin != null &&
-                baseSchema == associateJoin.fkColumns.get(0).getJoinedPrimaryColumn().getSchema();
+    public void setJsonKey_unsafe(String name) {
+        this.jsonKey = name;
     }
 
     public void resolveNameConflict(QJoin old) {
@@ -78,7 +77,7 @@ public class QJoin {
     }
 
 
-    public List<QColumn> getForeignKeyColumns() {
+    public JoinConstraint getJoinConstraint() {
         return fkColumns;
     }
 
@@ -165,11 +164,7 @@ public class QJoin {
     }
 
     public QSchema getLinkedSchema() {
-        QColumn col = fkColumns.get(0);
-        if (!inverseMapped) {
-            col = col.getJoinedPrimaryColumn();
-        }
-        return col.getSchema();
+        return fkColumns.getPeerSchema(baseSchema);
     }
 
     public QSchema getTargetSchema() {
