@@ -242,7 +242,6 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
             int pages = rs.getInt("pages");
 
             String table_cat = rs.getString("table_cat");
-            assert(table_cat == null);
             assert(is_unique);
 
             ArrayList<String> indexes = indexMap.get(index_name);

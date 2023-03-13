@@ -16,6 +16,8 @@ public interface JqlEntitySet<ENTITY, ID> {
 
     ENTITY find(ID id, JqlSelect select);
 
+    default ENTITY find(ID id) { return find(id, null); }
+
     default ENTITY get(ID id) {
         ENTITY entity = find(id, null);
         if (entity == null) throw new IllegalArgumentException("Entity not found: id = " + id);

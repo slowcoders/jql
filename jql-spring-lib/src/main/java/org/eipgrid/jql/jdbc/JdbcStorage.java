@@ -5,7 +5,7 @@ import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.jdbc.storage.JdbcSchemaLoader;
 import org.eipgrid.jql.jdbc.storage.QueryGenerator;
-import org.eipgrid.jql.jpa.JpaAdapter;
+import org.eipgrid.jql.jpa.JpaTable;
 import org.eipgrid.jql.jpa.JqlAdapter;
 import org.eipgrid.jql.schema.QSchema;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -17,7 +17,7 @@ import java.util.HashMap;
 
 public class JdbcStorage extends JdbcSchemaLoader {
     private HashMap<String, JdbcRepositoryBase> repositories = new HashMap<>();
-    private static HashMap<Class, JpaAdapter> jpaTables = new HashMap<>();
+    private static HashMap<Class, JpaTable> jpaTables = new HashMap<>();
 
     public JdbcStorage(DataSource dataSource,
                        TransactionTemplate transactionTemplate,
@@ -28,14 +28,11 @@ public class JdbcStorage extends JdbcSchemaLoader {
 
     public JdbcRepositoryBase registerTable(JqlAdapter table, Class entityType) {
         synchronized (jpaTables) {
-            if (jpaTables.put(entityType, (JpaAdapter) table) != null) {
+            if (jpaTables.put(entityType, (JpaTable) table) != null) {
                 throw new RuntimeException("Jpa repository already registered " + entityType.getName());
             }
             QSchema schema = super.loadSchema(entityType);
             JdbcRepositoryBase repo = new JdbcRepositoryImpl(this, schema);
-//            if (repositories.put(schema.getTableName(), repo) != null) {
-//                throw new RuntimeException("Jpa repository already registered " + entityType.getName());
-//            };
             return repo;
         }
     }
@@ -46,19 +43,11 @@ public class JdbcStorage extends JdbcSchemaLoader {
             QSchema schema = table.getSchema();
             JqlRepository old_table;
 
-//            if (schema.isJPARequired()) {
-//                old_table = jpaTables.put(schema.getEntityType(), (JpaAdapter) table);
-//                if (old_table != null) {
-//                    throw new Error("Duplicated JpaTable on this class " + schema.getEntityType().getName());
-//                }
-//            }
-
             String tableName = table.getTableName();
             old_table = repositories.put(tableName, table);
             if (old_table != null) {
                 throw new Error("Duplicated JdbcTable on the table " + table.getTableName());
             }
-
         }
     }
 
@@ -69,7 +58,7 @@ public class JdbcStorage extends JdbcSchemaLoader {
             if (schema.isJPARequired()) {
                 Class<?> entityType = schema.getEntityType();
                 JpaTableImpl table = new JpaTableImpl(this, entityType);
-                repo = repositories.get(entityType);
+                repo = repositories.get(schema.getTableName());
             } else {
                 repo = new JdbcRepositoryImpl(this, schema);
             }
@@ -77,14 +66,14 @@ public class JdbcStorage extends JdbcSchemaLoader {
         return repo;
     }
 
-    public <T, ID> JqlEntitySet<T, ID> getEntitySet(String tableName) {
-        JdbcRepositoryBase repo = getRepository(tableName);
+    public JqlEntitySet loadEntitySet(String tableName) {
+        JdbcRepositoryBase repo = loadRepository(tableName);
         JqlEntitySet table = jpaTables.get(repo.getSchema().getEntityType());
         if (table == null) table = repo;
         return table;
     }
 
-    public JdbcRepositoryBase getRepository(String tableName) {
+    public JdbcRepositoryBase loadRepository(String tableName) {
         JdbcRepositoryBase repo = repositories.get(tableName);
         if (repo == null) {
             synchronized (jpaTables) {
@@ -98,8 +87,8 @@ public class JdbcStorage extends JdbcSchemaLoader {
         return repo;
     }
 
-    public <T,ID> JpaAdapter<T,ID> getRepository(Class<T> entityType) {
-        JpaAdapter table = jpaTables.get(entityType);
+    public <T,ID> JpaTable<T,ID> loadJpaTable(Class<T> entityType) {
+        JpaTable table = jpaTables.get(entityType);
         if (table == null) {
             QSchema schema = this.loadSchema(entityType);
             synchronized (jpaTables) {
@@ -112,6 +101,11 @@ public class JdbcStorage extends JdbcSchemaLoader {
         return table;
     }
 
+    public static <T,ID> JpaTable<T,ID> findJpaTable(Class<T> entityType) {
+        JpaTable table = jpaTables.get(entityType);
+        return table;
+    }
+
     public final QueryGenerator createQueryGenerator() { return createQueryGenerator(true); }
 
 
@@ -119,7 +113,7 @@ public class JdbcStorage extends JdbcSchemaLoader {
         return super.createSqlGenerator(isNativeQuery);
     }
 
-    private class JpaTableImpl<ENTITY, ID> extends JpaAdapter<ENTITY, ID> {
+    private class JpaTableImpl<ENTITY, ID> extends JpaTable<ENTITY, ID> {
         private final PersistenceUnitUtil persistenceUnitUtil;
 
         public JpaTableImpl(JdbcStorage storage, Class<ENTITY> entityType) {

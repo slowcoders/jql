@@ -3,7 +3,6 @@ package org.eipgrid.jql.jpa;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eipgrid.jql.JqlQuery;
-import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.jdbc.JdbcRepositoryBase;
 import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.eipgrid.jql.schema.QSchema;
@@ -13,17 +12,17 @@ import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.*;
 
-public abstract class JpaAdapter<ENTITY, ID> extends JqlAdapter<ENTITY, ID> {
+public abstract class JpaTable<ENTITY, ID> extends JqlAdapter<ENTITY, ID> {
 
     private final HashMap<ID, Object> associatedCache = new HashMap<>();
     private final EntityManager entityManager;
 
-    protected JpaAdapter(JdbcRepositoryBase<ID> repositoryBase, Class<ENTITY> entityType) {
+    protected JpaTable(JdbcRepositoryBase<ID> repositoryBase, Class<ENTITY> entityType) {
         super(repositoryBase, entityType);
         this.entityManager = repositoryBase.getStorage().getEntityManager();
     }
 
-    protected JpaAdapter(JdbcStorage storage, Class<ENTITY> entityType) {
+    protected JpaTable(JdbcStorage storage, Class<ENTITY> entityType) {
         super(storage, entityType);
         this.entityManager = storage.getEntityManager();
     }

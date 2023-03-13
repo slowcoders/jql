@@ -26,7 +26,7 @@ public class StarWarsJpaService  {
 
     @PostConstruct
     void initData() throws IOException {
-        long cntCharacter = storage.getRepository(Character.class).count(null);
+        long cntCharacter = storage.loadJpaTable(Character.class).count(null);
         if (cntCharacter == 0) {
             loadData();
         }

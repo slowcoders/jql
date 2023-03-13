@@ -2,7 +2,7 @@ package org.eipgrid.jql.jdbc.postgres;
 
 import lombok.SneakyThrows;
 import org.eipgrid.jql.jdbc.JdbcStorage;
-import org.eipgrid.jql.jpa.JpaAdapter;
+import org.eipgrid.jql.jpa.JpaTable;
 import org.eipgrid.jql.schema.AutoClearEntityCache;
 import org.eipgrid.jql.schema.AutoUpdateModifyTimestamp;
 import org.eipgrid.jql.schema.QColumn;
@@ -19,11 +19,11 @@ import java.util.List;
 
 public class UpdateListener extends Thread {
     private final JdbcStorage storage;
-    private final JpaAdapter repository;
+    private final JpaTable repository;
     private final PgConnection conn;
     private final ConnectionHolder connHolder;
 
-    public UpdateListener(JdbcStorage storage, String event, JpaAdapter repository) throws SQLException {
+    public UpdateListener(JdbcStorage storage, String event, JpaTable repository) throws SQLException {
         this.storage = storage;
         this.conn = storage.getDataSource().getConnection().unwrap(PgConnection.class);
         this.connHolder = new ConnectionHolder(this.conn);
@@ -34,7 +34,7 @@ public class UpdateListener extends Thread {
         stmt.close();
     }
 
-    public static <ID, ENTITY> void initAutoUpdateTrigger(JdbcStorage storage, JpaAdapter<ENTITY,ID> repository) {
+    public static <ID, ENTITY> void initAutoUpdateTrigger(JdbcStorage storage, JpaTable<ENTITY,ID> repository) {
         Class<?> entityType = repository.getEntityType();
         AutoUpdateModifyTimestamp autoUpdate = entityType.getAnnotation(AutoUpdateModifyTimestamp.class);
         AutoClearEntityCache autoClearCache = entityType.getAnnotation(AutoClearEntityCache.class);

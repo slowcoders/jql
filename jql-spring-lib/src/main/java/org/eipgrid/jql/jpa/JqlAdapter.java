@@ -26,6 +26,9 @@ public class JqlAdapter<ENTITY, ID> implements JqlEntitySet<ENTITY, ID> {
         this(repository, entityType, repository.getStorage().getObjectMapper());
     }
 
+    public JdbcRepositoryBase<ID> getRepository() {
+        return this.repository;
+    }
     protected JqlAdapter(JdbcStorage storage, Class<ENTITY> entityType) {
         this.entityType = entityType;
         this.repository = storage.registerTable(this, entityType);

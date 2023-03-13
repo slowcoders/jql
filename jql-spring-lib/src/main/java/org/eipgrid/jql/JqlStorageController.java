@@ -2,7 +2,6 @@ package org.eipgrid.jql;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.eipgrid.jql.js.JsUtil;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,7 +35,7 @@ public interface JqlStorageController extends JqlRestApi {
 
         public JqlEntitySet getRepository(String tableName) {
             String tablePath = tableNamePrefix + tableName;
-            return storage.getEntitySet(tablePath);
+            return storage.loadEntitySet(tablePath);
         }
 
         @GetMapping(path = "/")

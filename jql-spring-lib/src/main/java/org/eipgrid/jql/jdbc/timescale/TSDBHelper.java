@@ -325,7 +325,7 @@ public abstract class TSDBHelper {
 
             QSchema schema = storage.loadSchema(tableName);
             initializeTSDB(schema);
-            return storage.getRepository(tableName);
+            return storage.loadRepository(tableName);
         }
         finally {
             con.setAutoCommit(autoCommitOld);
