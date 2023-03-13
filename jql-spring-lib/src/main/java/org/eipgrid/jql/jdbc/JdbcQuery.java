@@ -13,20 +13,14 @@ public class JdbcQuery<ENTITY> extends JqlQuery<ENTITY> {
     //protected static int SingleEntityOffset = JqlQuery.SingleEntityOffset;
     private final JdbcRepositoryBase table;
     private final JqlFilter filter;
-    private Class<ENTITY> jpaEntityType;
-
     /*package*/ String executedQuery;
     /*package*/ Object extraInfo;
 
-    public JdbcQuery(JdbcRepositoryBase table, JqlSelect select, JqlFilter jqlFilter) {
+    public JdbcQuery(JdbcRepositoryBase table, JqlSelect select, JqlFilter filter) {
+        assert (filter != null);
         this.table = table;
-        this.filter = jqlFilter;
+        this.filter = filter;
         super.select(select);
-    }
-
-    public JdbcQuery(JdbcRepositoryBase table, JqlSelect select, JqlFilter jqlFilter, Class<ENTITY> jpaEntityType) {
-        this(table, select, jqlFilter);
-        this.jpaEntityType = jpaEntityType;
     }
 
     public final Class<ENTITY> getJpaEntityType() {
@@ -37,7 +31,7 @@ public class JdbcQuery<ENTITY> extends JqlQuery<ENTITY> {
     public JqlSelect getSelection() {
         JqlSelect select = super.getSelection();
         if (select == null || select == JqlSelect.Auto) {
-            select = JqlSelect.of("");
+            select = new JqlSelect();//.of("");
             super.select(select);
         }
         return select;

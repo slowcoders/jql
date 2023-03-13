@@ -130,7 +130,8 @@ public class JqlParser {
 
     private NodeType getNodeType(Object value) {
         if (value instanceof Collection) {
-            if (((Collection)value).iterator().next() instanceof Map) {
+            Collection values = (Collection) value;
+            if (!values.isEmpty() && values.iterator().next() instanceof Map) {
                 return NodeType.Entities;
             }
         }

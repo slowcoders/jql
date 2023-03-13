@@ -44,6 +44,10 @@ public class JqlFilter extends TableFilter {
         return filter;
     }
 
+    public static JqlFilter of(QSchema schema) {
+        return new JqlFilter(schema);
+    }
+
 
     public void setSelectedProperties(List<String> keys) {
         selectAuto = (keys == null || keys.size() == 0);

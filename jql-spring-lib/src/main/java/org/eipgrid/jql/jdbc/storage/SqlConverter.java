@@ -66,40 +66,64 @@ public abstract class SqlConverter implements PredicateVisitor {
 
     @Override
     public void visitMatchAny(QColumn column, JqlOp operator, Collection values) {
+        boolean is_not = operator == JqlOp.NE || operator == JqlOp.NOT_LIKE;
+        boolean contains_null = values.contains(null);
+        if (contains_null) {
+            ArrayList arrayList = new ArrayList(values);
+            for (int i; (i = arrayList.indexOf(null)) >= 0; ) { arrayList.remove(i); };
+            values = arrayList;
+        }
+
+        if (is_not || contains_null) {
+            sw.write("(");
+            writeQualifiedColumnName(column, values);
+            sw.write(is_not && contains_null ? " IS NOT " : " IS ").write("NULL OR ");
+            contains_null = true;
+        }
+
         if (operator == JqlOp.EQ || operator == JqlOp.NE) {
             writeQualifiedColumnName(column, values);
         }
-        switch (operator) {
-            case NE:
-                sw.write(" NOT");
-                // no-break;
-            case EQ:
-                sw.write(" IN(");
-                sw.writeValues(values);
-                sw.write(")");
-                break;
 
-            case NOT_LIKE:
-                sw.write(" NOT ");
-                // no-break;
-            case LIKE:
-                sw.write("(");
-                boolean first = true;
-                for (Object v : values) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        sw.write(" OR ");
+        if (values.isEmpty()) {
+            sw.write(is_not ? " IS NOT NULL" : " IN (NULL)");
+        }
+        else {
+            switch (operator) {
+                case NE:
+                    sw.write(" NOT");
+                    // no-break;
+                case EQ:
+                    sw.write(" IN(");
+                    sw.writeValues(values);
+                    sw.write(")");
+                    break;
+
+                case NOT_LIKE:
+                    sw.write(" NOT ");
+                    // no-break;
+                case LIKE:
+                    sw.write("(");
+                    boolean first = true;
+                    for (Object v : values) {
+                        if (first) {
+                            first = false;
+                        } else {
+                            sw.write(" OR ");
+                        }
+                        writeQualifiedColumnName(column, "");
+                        sw.write(" LIKE ");
+                        sw.writeQuoted(v);
                     }
-                    writeQualifiedColumnName(column, "");
-                    sw.write(" LIKE ");
-                    sw.writeQuoted(v);
-                }
-                sw.write(")");
-                break;
+                    sw.write(")");
+                    break;
 
-            default:
-                throw new RuntimeException("Invalid match any operator: " + operator);
+                default:
+                    throw new RuntimeException("Invalid match any operator: " + operator);
+            }
+        }
+        if (contains_null) {
+            sw.write(")");
         }
     }
 

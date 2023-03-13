@@ -44,11 +44,6 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
         return storage;
     }
 
-//    public JqlQuery createQuery(Map<String, Object> filter) {
-//        JqlFilter jqlFilter = jqlParser.parse(schema, (Map)filter);
-//        return new JdbcQuery(this, null, jqlFilter);
-//    }
-//
     public final List<Map> find(Iterable<ID> idList, JqlSelect select) {
         List<Map> res = find(new JdbcQuery(this, select, JqlFilter.of(schema, idList)));
         return res;
@@ -72,7 +67,7 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
 
     @Override
     public List<Map> findAll(JqlSelect select, Sort sort) {
-        return find(new JdbcQuery(this, select, null).sort(sort));
+        return find(new JdbcQuery(this, select, JqlFilter.of(this.schema)).sort(sort));
     }
 
     public List find(JqlQuery query0, OutputFormat outputFormat) {
