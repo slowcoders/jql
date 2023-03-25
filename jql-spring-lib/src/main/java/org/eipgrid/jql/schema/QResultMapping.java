@@ -7,8 +7,6 @@ public interface QResultMapping {
 
     QResultMapping getParentNode();
 
-    QResultMapping getChildMapping(String name);
-
     boolean hasChildMappings();
 
     String getMappingAlias();
@@ -23,6 +21,7 @@ public interface QResultMapping {
 
     boolean hasArrayDescendantNode();
 
+    // 생략 가능.
     boolean isEmpty();
 
 }

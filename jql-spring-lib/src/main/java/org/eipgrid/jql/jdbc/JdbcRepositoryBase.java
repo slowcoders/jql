@@ -6,6 +6,7 @@ import org.eipgrid.jql.jdbc.storage.BatchUpsert;
 import org.eipgrid.jql.jdbc.output.ArrayRowMapper;
 import org.eipgrid.jql.jdbc.output.IdListMapper;
 import org.eipgrid.jql.jdbc.output.JsonRowMapper;
+import org.eipgrid.jql.jdbc.storage.JdbcSchema;
 import org.eipgrid.jql.parser.JqlFilter;
 import org.eipgrid.jql.parser.JqlParser;
 import org.eipgrid.jql.schema.QColumn;
@@ -61,8 +62,8 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
 
 
     //    @Override
-    protected ResultSetExtractor<List<Map>> getColumnMapRowMapper(JqlFilter filter) {
-        return new JsonRowMapper(filter.getResultMappings(), storage.getObjectMapper());
+    protected ResultSetExtractor<List<Map>> getColumnMapRowMapper(JdbcQuery query) {
+        return new JsonRowMapper(query.getResultMappings(), storage.getObjectMapper());
     }
 
     @Override
@@ -99,7 +100,7 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
         else {
             sql = query.appendPaginationQuery(sql);
 
-            res = jdbc.query(sql, getColumnMapRowMapper(query.getFilter()));
+            res = jdbc.query(sql, getColumnMapRowMapper(query));
 //            if (!RawEntityType.isAssignableFrom(entityType)) {
 //                ObjectMapper converter = storage.getObjectMapper();
 //                for (int i = res.size(); --i >= 0; ) {
@@ -124,21 +125,21 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
 
     // Insert Or Update Entity
     @Override
-    public List<ID> insert(Collection<? extends Map<String, Object>> entities) {
+    public List<ID> insert(Collection<? extends Map<String, Object>> entities, InsertPolicy insertPolicy) {
         if (entities.isEmpty()) return Collections.emptyList();
 
-        BatchUpsert batch = new BatchUpsert(this.getSchema(), entities, true);
+        BatchUpsert batch = new BatchUpsert((JdbcSchema) this.getSchema(), entities, insertPolicy);
         jdbc.batchUpdate(batch.getSql(), batch);
         return batch.getEntityIDs();
     }
 
-    public ID insert_raw(Map<String, Object> properties) {
-        ID id = this.insert(Collections.singletonList(properties)).get(0);
+    public ID insert_raw(Map<String, Object> properties, InsertPolicy insertPolicy) {
+        ID id = this.insert(Collections.singletonList(properties), insertPolicy).get(0);
         return id;
     }
 
-    public Map insert(Map<String, Object> properties) {
-        ID id = insert_raw(properties);
+    public Map insert(Map<String, Object> properties, InsertPolicy insertPolicy) {
+        ID id = insert_raw(properties, insertPolicy);
         return get(id);
     }
 

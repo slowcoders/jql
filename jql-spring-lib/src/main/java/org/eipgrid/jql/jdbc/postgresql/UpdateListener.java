@@ -1,4 +1,4 @@
-package org.eipgrid.jql.jdbc.postgres;
+package org.eipgrid.jql.jdbc.postgresql;
 
 import lombok.SneakyThrows;
 import org.eipgrid.jql.jdbc.JdbcStorage;

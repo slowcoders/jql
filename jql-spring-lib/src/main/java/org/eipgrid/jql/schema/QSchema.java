@@ -10,8 +10,6 @@ public abstract class QSchema {
     private final String tableName;
     private final Class<?> entityType;
 
-    private final boolean isJPASchema;
-
     private List<QColumn> pkColumns;
     private List<QColumn> allColumns;
     private List<QColumn> leafColumns;
@@ -19,6 +17,7 @@ public abstract class QSchema {
     private List<QColumn> writableColumns;
     private Map<String, QColumn> columnMap = new HashMap<>();
     private boolean hasGeneratedId;
+    private final boolean isJPASchema;
 
     public QSchema(String tableName, Class<?> entityType) {
         this.tableName = tableName;

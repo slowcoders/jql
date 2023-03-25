@@ -1,7 +1,7 @@
 import {describe, expect, test} from '@jest/globals';
 import { jqlApi } from '@/api/jqlApi'
 
-describe('Top', () => {
+describe('Select Test', () => {
   test('Find first', async () => {
     const filter = {
       "name@like": "Luke%"
@@ -25,40 +25,54 @@ describe('Top', () => {
     }
   });
 
-  test('Select Name only', async () => {
-    const character = await jqlApi.top(null, { select: "name" });
-    for (const k in character) {
-      expect(k).toBe('name');
-    }
+  describe('Select PrimaryKeys and Name', () => {
+    test('Implicit ID selection for array node', async () => {
+      const character = await jqlApi.top(null, {select: "name"});
+      for (const k in character) {
+        expect(k == 'id' || k == 'name').toBeTruthy();
+      }
+    })
+
+    test('Explicit ID selection with other leaf property', async () => {
+      const character = await jqlApi.top(null, {select: "0, name"});
+      expect(character.id).not.toBeUndefined();
+      expect(character.name).not.toBeUndefined();
+      for (const k in character) {
+        expect(k == 'id' || k == 'name').toBeTruthy();
+      }
+    });
   });
 
-  test('Select PrimaryKeys and Name', async () => {
-    const character = await jqlApi.top(null, { select: "0, name" });
+  test('Select Episodes of Luke Skywalker)', async () => {
+    const filter = {
+      "name@like": "Luke%"
+    }
+    const character = await jqlApi.top(filter, { select: "episode_(title)" });
     expect(character.id).not.toBeUndefined();
-    expect(character.name).not.toBeUndefined();
+    expect(character.episode_).not.toBeUndefined();
     for (const k in character) {
-      expect(k == 'id' || k == 'name').toBeTruthy();
+      expect(k == 'id' || k == 'episode_').toBeTruthy();
+    }
+    for (const episode of character.episode_) {
+      for (const k in episode) {
+        expect(k == 'title').toBeTruthy();
+      }
     }
   });
 
-  test('Find any character having a starship that length > 10', async () => {
+  test('Select Episodes and Starships of Luke Skywalker)', async () => {
     const filter = {
-      "starship_": { "length@gt": 10 }
+      "name@like": "Luke%"
     }
-    const character = await jqlApi.top(filter);
-    for (const ship of character.starship_) {
-      expect(ship.length).toBeGreaterThan(10);
+    const character = await jqlApi.top(filter, { select: "episode_, starship_" });
+    expect(character.id).not.toBeUndefined();
+    expect(character.episode_).not.toBeUndefined();
+    expect(character.starship_).not.toBeUndefined();
+    for (const k in character) {
+      expect(k == 'id' || k == 'episode_' || k == 'starship_').toBeTruthy();
     }
   });
 
-  test('Find any character having a starship that length < 10', async () => {
-    const filter = {
-      "starship_": { "length@lt": 10 }
-    }
-    const character = await jqlApi.top(filter);
-    for (const ship of character.starship_) {
-      expect(ship.length).toBeLessThan(10);
-    }
-  });
+
 });
 

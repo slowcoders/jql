@@ -1,5 +1,6 @@
 package org.eipgrid.jql.sample.jdbc.starwars.service;
 
+import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.JqlRepository;
 import org.eipgrid.jql.JqlStorage;
 import org.eipgrid.jql.util.KVEntity;

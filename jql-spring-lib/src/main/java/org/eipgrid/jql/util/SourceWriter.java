@@ -174,4 +174,7 @@ public class SourceWriter<Self extends SourceWriter> {
         return this;
     }
 
+    public int length() {
+        return sb.length();
+    }
 }

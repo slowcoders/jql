@@ -36,36 +36,56 @@ public abstract class JpaTable<ENTITY, ID> extends JqlAdapter<ENTITY, ID> {
         return (JqlQuery<ENTITY>)repository.createQuery(jqlFilter);
     }
 
-    public ENTITY insert(Map<String, Object> dataSet) {
+    public ENTITY insert(Map<String, Object> dataSet, InsertPolicy insertPolicy) {
         ENTITY entity = super.convertToEntity(dataSet);
         ENTITY newEntity = this.insertOrUpdate(entity);
         return newEntity;
     }
 
-    public List<ID> insert(Collection<? extends Map<String, Object>> entities) {
-        List<ID> res = super.insert(entities);
+    public List<ID> insert(Collection<? extends Map<String, Object>> entities, InsertPolicy insertPolicy) {
+        List<ID> res = super.insert(entities, insertPolicy);
         return res;
     }
 
-    public List<ENTITY> insertEntities(Collection<ENTITY> entities) {
+    public final List<ENTITY> insertEntities(Collection<ENTITY> entities) {
+        return this.insertEntities(entities, InsertPolicy.ErrorOnConflict);
+    }
+
+    public List<ENTITY> insertEntities(Collection<ENTITY> entities, InsertPolicy insertPolicy) {
         List<ENTITY> result = new ArrayList<>();
 
         for (ENTITY entity : entities) {
-            result.add(insertEntity(entity));
+            result.add(insertEntity(entity, insertPolicy));
         }
 
         return result;
     }
 
+    public final ENTITY insertEntity(ENTITY entity) {
+        return this.insertEntity(entity, InsertPolicy.ErrorOnConflict);
+    }
 
-    public ENTITY insertEntity(ENTITY entity) {
-        if (repository.hasGeneratedId()) {
-            ID id = getEntityId(entity);
-            if (id != null) {
-                throw new IllegalArgumentException("Entity can not be created with id");
-            }
+    public ENTITY insertEntity(ENTITY entity, InsertPolicy insertPolicy) {
+        ENTITY newEntity = entity;
+        boolean ignoreOnConflict = false;
+        switch (insertPolicy) {
+            case IgnoreOnConflict:
+                ignoreOnConflict = true;
+            case ErrorOnConflict:
+                ID id = getEntityId(entity);
+                if (id != null) {
+                    if (!ignoreOnConflict && repository.hasGeneratedId()) {
+                        throw new IllegalArgumentException("Entity can not be created with id");
+                    } else if (getEntityManager().find(getEntityType(), id) != null) {
+                        if (ignoreOnConflict) return entity;
+                        throw new IllegalArgumentException("Entity id is already exist: " + id);
+                    }
+                }
+                // no-break;
+            case UpdateOnConflict:
+                newEntity = insertOrUpdate(entity);
+                break;
         }
-        ENTITY newEntity = insertOrUpdate(entity);
         return newEntity;
     }
 

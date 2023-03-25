@@ -82,13 +82,13 @@ public class JqlAdapter<ENTITY, ID> implements JqlEntitySet<ENTITY, ID> {
 
 
     @Override
-    public List<ID> insert(Collection<? extends Map<String, Object>> entities) {
-        return repository.insert(entities);
+    public List<ID> insert(Collection<? extends Map<String, Object>> entities, InsertPolicy insertPolicy) {
+        return repository.insert(entities, insertPolicy);
     }
 
     @Override
-    public ENTITY insert(Map<String, Object> properties) {
-        Map res =  repository.insert(properties);
+    public ENTITY insert(Map<String, Object> properties, InsertPolicy insertPolicy) {
+        Map res =  repository.insert(properties, insertPolicy);
         return convertToEntity(res);
     }
 

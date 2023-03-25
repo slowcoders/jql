@@ -1,138 +1,37 @@
 package org.eipgrid.jql.jdbc.storage;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eipgrid.jql.JqlRepository;
-import org.eipgrid.jql.JqlStorage;
+import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
 import org.eipgrid.jql.schema.QSchema;
 import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.ConnectionCallback;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
-import javax.persistence.metamodel.EntityType;
-import javax.sql.DataSource;
+import javax.persistence.Table;
 import java.sql.*;
 import java.util.*;
 
-public abstract class JdbcSchemaLoader extends JqlStorage {
-    private final EntityManager entityManager;
-    private final TransactionTemplate transactionTemplate;
-    private final JdbcTemplate jdbc;
-    private String defaultNamespace;
-    private boolean schemaSupported;
+public abstract class JdbcSchemaLoader {
 
-    private String dbType;
-    private HashMap<String, Class<?>> ormTypeMap;
+    protected final JdbcStorage storage;
 
-    private final HashMap<Class<?>, JdbcSchema> classToSchemaMap = new HashMap<>();
-    private final HashMap<String, JdbcSchema> schemaMap = new HashMap<>();
+    protected final String defaultNamespace;
 
+    protected final boolean schemaSupported;
 
-    protected JdbcSchemaLoader(DataSource dataSource, TransactionTemplate transactionTemplate, ObjectMapper objectMapper, EntityManager entityManager) {
-        super(transactionTemplate, objectMapper);
-        this.jdbc = new JdbcTemplate(dataSource);
-        this.entityManager = entityManager;
-        this.transactionTemplate = transactionTemplate;
-        Properties dbProperties = jdbc.execute(new ConnectionCallback<Properties>() {
-            @Override
-            public Properties doInConnection(Connection conn) throws SQLException, DataAccessException {
-                dbType = conn.getMetaData().getDatabaseProductName().toLowerCase();
-                String schema = conn.getSchema();
-                schemaSupported = schema != null;
-                if (schemaSupported) {
-                    defaultNamespace = schema;
-                } else {
-                    defaultNamespace = conn.getCatalog();
-                }
-                return null;
-            }
-        });
-    }
-
-    public final EntityManager getEntityManager() { return entityManager; }
-
-    public final String getDbType() { return dbType; }
-
-    public final DataSource getDataSource() {
-        return this.jdbc.getDataSource();
-    }
-
-    public final JdbcTemplate getJdbcTemplate() {
-        return jdbc;
-    }
-
-    public final boolean isDBSchemaSupported() {
-        return this.schemaSupported;
-    }
-    
-    private void initialize() {
-        if (ormTypeMap != null) return;
-        synchronized (this) {
-            if (ormTypeMap != null) return;
-            ormTypeMap = new HashMap<>();
-
-            Set<EntityType<?>> types = entityManager.getEntityManagerFactory().getMetamodel().getEntities();
-            for (EntityType<?> type : types) {
-                Class<?> clazz = type.getJavaType();
-                TablePath tablePath = TablePath.of(clazz, this);
-                if (tablePath != null) {
-                    ormTypeMap.put(tablePath.getQualifiedName(), clazz);
-                }
-            }
+    public JdbcSchemaLoader(JdbcStorage storage, String defaultNamespace, boolean schemaSupported) {
+        this.storage = storage;
+        this.schemaSupported = schemaSupported;
+        if (defaultNamespace != null && defaultNamespace.trim().length() == 0) {
+            defaultNamespace = null;
         }
+        this.defaultNamespace = defaultNamespace;
     }
 
+    public abstract SqlGenerator createSqlGenerator(boolean isNativeQuery);
 
-    public String getDefaultNamespace() { return this.defaultNamespace; }
-
-
-    public QSchema loadSchema(Class entityType) {
-        initialize();
-        QSchema schema = classToSchemaMap.get(entityType);
-        if (schema == null) {
-            TablePath tablePath = TablePath.of(entityType, this);
-            schema = loadSchema(tablePath, entityType);
-        }
-        return schema;
-    }
-
-    public QSchema loadSchema(String tableName) {
-        initialize();
-        QSchema schema = schemaMap.get(tableName);
-        if (schema == null) {
-            Class<?> ormType = ormTypeMap.get(tableName);
-            if (ormType == null) {
-                ormType = JqlRepository.rawEntityType;
-            }
-            TablePath tablePath = TablePath.of(tableName, this);
-            schema = loadSchema(tablePath, ormType);
-        }
-        return schema;
-    }
-
-    private QSchema loadSchema(TablePath tablePath, Class<?> ormType0) {
-
-        final Class<?> ormType = ormType0;
-        synchronized (schemaMap) {
-            QSchema schema = jdbc.execute(new ConnectionCallback<QSchema>() {
-                @Override
-                public QSchema doInConnection(Connection conn) throws SQLException, DataAccessException {
-                    return loadSchema(conn, tablePath, ormType);
-                }
-            });
-            return schema;
-        }
-    }
-
-    private QSchema loadSchema(Connection conn, TablePath tablePath, Class<?> ormType) throws SQLException {
-        JdbcSchema schema = schemaMap.get(tablePath.getQualifiedName());
-        if (schema != null) return schema;
-
+    public JdbcSchema loadSchema(Connection conn, TablePath tablePath, Class<?> ormType) throws SQLException {
         String qname = tablePath.getQualifiedName();
-        schema = new JdbcSchema(JdbcSchemaLoader.this, qname, ormType);
+        JdbcSchema schema = new JdbcSchema(storage, qname, ormType);
 
         ArrayList<String> primaryKeys = getPrimaryKeys(conn, tablePath);
         HashMap<String, ArrayList<String>> uniqueConstraints = getUniqueConstraints(conn, tablePath);
@@ -146,23 +45,7 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         ArrayList<QColumn> columns = getColumns(conn, tablePath, schema, primaryKeys);
         processForeignKeyConstraints(conn, schema, tablePath, columns);
         schema.init(columns, uniqueConstraints, ormType);
-        schemaMap.put(qname, schema);
-        if (schema.isJPARequired()) {
-            classToSchemaMap.put(ormType, schema);
-        }
         return schema;
-    }
-
-    protected void loadJoinMap(QSchema schema) {
-        synchronized (schemaMap) {
-            jdbc.execute(new ConnectionCallback<Void>() {
-                @Override
-                public Void doInConnection(Connection conn) throws SQLException, DataAccessException {
-                    loadExternalJoins(conn, (JdbcSchema) schema);
-                    return null;
-                }
-            });
-        }
     }
 
     private ArrayList<String> getPrimaryKeys(Connection conn, TablePath tablePath) throws SQLException {
@@ -182,35 +65,19 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         return keys;
     }
 
-    public List<String> getTableNames(String namespace) {
-        List<String> tableNames = jdbc.execute(new ConnectionCallback<List<String>>() {
-            @Override
-            public List<String> doInConnection(Connection conn) throws SQLException, DataAccessException {
-                return getTableNames(conn, namespace);
-            }
-        });
-        return tableNames;
-    }
-
-    public List<String> getNamespaces() {
-        List<String> namespaces = jdbc.execute(new ConnectionCallback<List<String>>() {
-            @Override
-            public List<String> doInConnection(Connection conn) throws SQLException, DataAccessException {
-                DatabaseMetaData md = conn.getMetaData();
-                ResultSet rs = schemaSupported ? md.getSchemas() : md.getCatalogs();
-                ArrayList<String> names = new ArrayList<>();
-                while (rs.next()) {
-                    String name = rs.getString(schemaSupported ? "TABLE_SCHEM": "TABLE_CAT");
-                    names.add(name);
-                }
-                return names;
-            }
-        });
-        return namespaces;
+    public List<String> getNamespaces(Connection conn) throws SQLException, DataAccessException {
+        DatabaseMetaData md = conn.getMetaData();
+        ResultSet rs = schemaSupported ? md.getSchemas() : md.getCatalogs();
+        ArrayList<String> names = new ArrayList<>();
+        while (rs.next()) {
+            String name = rs.getString(schemaSupported ? "TABLE_SCHEM": "TABLE_CAT");
+            names.add(name);
+        }
+        return names;
     }
 
 
-    private ArrayList<String> getTableNames(Connection conn, String namespace) throws SQLException {
+    public ArrayList<String> getTableNames(Connection conn, String namespace) throws SQLException {
         DatabaseMetaData md = conn.getMetaData();
         String[] types = {"TABLE"};
         ResultSet rs = md.getTables(namespace, namespace, "%", types);
@@ -270,25 +137,25 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         while (rs.next()) {
             JoinData join = new JoinData(rs, this);
             JdbcColumn fk = getColumnByPhysicalName(columns, join.fkColumnName);
-            fk.bindPrimaryKey(new ColumnBinder(this, join.pkTableQName, join.pkColumnName));
+            fk.bindPrimaryKey(new ColumnBinder(storage, join.pkTableQName, join.pkColumnName));
             fkSchema.addForeignKeyConstraint(join.fk_name, fk);
         }
     }
 
-    private void loadExternalJoins(Connection conn, JdbcSchema pkSchema) throws SQLException {
+    public void loadExternalJoins(Connection conn, JdbcSchema pkSchema) throws SQLException {
         Map<String, QJoin> res = pkSchema.getEntityJoinMap(false);
         if (res != null) {
             return;
         }
 
-        final TablePath tablePath = TablePath.of(pkSchema.getTableName(), JdbcSchemaLoader.this);
+        final TablePath tablePath = TablePath.of(pkSchema.getTableName());
         DatabaseMetaData md = conn.getMetaData();
         ResultSet rs = md.getExportedKeys(tablePath.getCatalog(), tablePath.getSchema(), tablePath.getSimpleName());
 
         JoinMap.Builder joins = new JoinMap.Builder(pkSchema);
         while (rs.next()) {
             JoinData join = new JoinData(rs, this);
-            JdbcSchema fkSchema = (JdbcSchema) loadSchema(join.fkTableQName);
+            JdbcSchema fkSchema = (JdbcSchema)storage.loadSchema(join.fkTableQName);
             QJoin fkJoin = fkSchema.getJoinByForeignKeyConstraints(join.fk_name);
             joins.put(fkSchema, fkJoin);
         }
@@ -314,63 +181,28 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         return columns;
     }
 
-    public String getTableComment(String tableName) {
-        TablePath tablePath = TablePath.of(tableName, this);
-        String comment = null;
-        if ("postgresql".equals(dbType)) {
-        }
-        else if ("mariadb".equals(dbType) || "mysql".equals(dbType)) {
-            String sql = "SELECT table_name, table_comment\n" +
-                    "FROM information_schema.tables\n" +
-                    "WHERE table_schema = '" + tablePath.getCatalog() + "' and table_name = '" + tablePath.getSimpleName() + "'";
-
-            List<Map<String, Object>> rs = jdbc.queryForList(sql);
-            for (Map<String, Object> row : rs) {
-                comment = (String) row.get("table_comment");
-                if (comment != null) {
-                    comment = comment.trim();
-                }
-            }
-        }
-        return comment;
-    }
+    public abstract String getTableComment(String tableName);
 
 
     private Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
         HashMap<String, String> comments = new HashMap<>();
-        if ("postgresql".equals(dbType)) {
-            String sql = "SELECT c.column_name, pgd.description\n" +
-                    "FROM information_schema.columns c\n" +
-                    "    inner join pg_catalog.pg_statio_all_tables as st on (c.table_name = st.relname)\n" +
-                    "    inner join pg_catalog.pg_description pgd on (pgd.objoid=st.relid and\n" +
-                    "          pgd.objsubid=c.ordinal_position)\n" +
-                    "where c.table_schema = '" + tablePath.getSchema() + "' and c.table_name = '" + tablePath.getSimpleName() + "';\n";
+        String sql = "SELECT c.column_name, pgd.description\n" +
+                "FROM information_schema.columns c\n" +
+                "    inner join pg_catalog.pg_statio_all_tables as st on (c.table_name = st.relname)\n" +
+                "    inner join pg_catalog.pg_description pgd on (pgd.objoid=st.relid and\n" +
+                "          pgd.objsubid=c.ordinal_position)\n" +
+                "where c.table_schema = '" + tablePath.getSchema() + "' and c.table_name = '" + tablePath.getSimpleName() + "';\n";
 
-            ResultSet rs = conn.createStatement().executeQuery(sql);
-            while (rs.next()) {
-                String columnName = rs.getString("column_name");
-                String comment = rs.getString("description");
-                comments.put(columnName, comment);
-            }
-        }
-        else if ("mariadb".equals(dbType) || "mysql".equals(dbType)) {
-            String sql = "SELECT table_name, column_name, column_comment\n" +
-                    "FROM information_schema.columns\n" +
-                    "WHERE table_schema = '" + tablePath.getCatalog() + "' and table_name = '" + tablePath.getSimpleName() + "'";
-
-            ResultSet rs = conn.createStatement().executeQuery(sql);
-            while (rs.next()) {
-                String comment = rs.getString("column_comment");
-                if (comment != null && comment.trim().length() > 0) {
-                    String columnName = rs.getString("column_name");
-                    comments.put(columnName, comment);
-                }
-            }
+        ResultSet rs = conn.createStatement().executeQuery(sql);
+        while (rs.next()) {
+            String columnName = rs.getString("column_name");
+            String comment = rs.getString("description");
+            comments.put(columnName, comment);
         }
         return comments;
     }
 
-    private void dumResultSet(ResultSet rs) throws SQLException {
+    public void dumResultSet(ResultSet rs) throws SQLException {
         ResultSetMetaData meta = rs.getMetaData();
         int colCount = meta.getColumnCount();
         while (rs.next()) {
@@ -392,6 +224,11 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 //        sb.write("]\n");
 //        return sb.toString();
         throw new RuntimeException("not implemented");
+    }
+
+    public TablePath getTablePath(Class<?> clazz) {
+        Table table = clazz.getAnnotation(Table.class);
+        return table != null ? TablePath.of(table, this.schemaSupported) : null;
     }
 
     static class JoinData {
@@ -430,8 +267,8 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
 
             this.pkColumnName = rs.getString("pkcolumn_name");
             this.fkColumnName = rs.getString("fkcolumn_name");
-            this.fkTableQName = TablePath.of(fktable_cat, fktable_schem, fktable_name, loader).getQualifiedName();
-            this.pkTableQName = TablePath.of(pktable_cat, pktable_schem, pktable_name, loader).getQualifiedName();
+            this.fkTableQName = loader.makeQualifiedName(fktable_cat, fktable_schem, fktable_name);
+            this.pkTableQName = loader.makeQualifiedName(pktable_cat, pktable_schem, pktable_name);
 
             this.key_seq = rs.getInt("key_seq");
             this.update_rule = rs.getInt("update_rule");
@@ -440,7 +277,69 @@ public abstract class JdbcSchemaLoader extends JqlStorage {
         }
     }
 
-    protected SqlGenerator createSqlGenerator(boolean isNativeQuery) {
-        return new SqlGenerator(isNativeQuery);
+    private String makeQualifiedName(String db_category, String db_schema, String table_name) {
+        String namespace = schemaSupported ? db_schema : db_category;
+        if (namespace == null || (namespace = namespace.trim()).length() == 0) {
+            namespace = defaultNamespace;
+        }
+        return namespace == null ? table_name : namespace + '.' + table_name;
+    }
+
+    public static class TablePath {
+        private final String catalog;
+        private final String schema;
+        private final String qualifiedName;
+        private final String simpleName;
+
+        TablePath(String catalog, String schema, String qualifiedName, String simpleName) {
+            this.catalog = catalog;
+            this.schema = schema;
+            this.qualifiedName = qualifiedName;
+            this.simpleName = simpleName;
+        }
+
+        public String getQualifiedName() {
+            return qualifiedName;
+        }
+
+        public String getSimpleName() {
+            return simpleName;
+        }
+
+        public String getCatalog() {
+            return catalog;
+        }
+
+        public String getSchema() {
+            return schema;
+        }
+
+
+        public static TablePath of(Class<?> clazz, boolean useSchema) {
+            Table table = clazz.getAnnotation(Table.class);
+            return table != null ? of(table, useSchema) : null;
+        }
+
+        public static TablePath of(Table table, boolean useSchema) {
+            String name = table.name();
+            String namespace = useSchema ? table.schema() : table.catalog();
+            return of(namespace, name);
+        }
+
+        public static TablePath of(String namespace, String simpleName) {
+            namespace = namespace == null ? "" : namespace.trim();
+            simpleName = simpleName.trim();
+
+            String qualifiedName = namespace.length() > 0 ? namespace + '.' + simpleName : simpleName;
+            return new TablePath(namespace, namespace, qualifiedName, simpleName);
+        }
+
+        public static TablePath of(String qualifiedName) {
+            qualifiedName = qualifiedName.toLowerCase();
+            int last_dot_p = qualifiedName.lastIndexOf('.');
+            String namespace = last_dot_p > 0 ? qualifiedName.substring(0, last_dot_p) : null;//getDefaultDBSchema();
+            String simpleName = qualifiedName.substring(last_dot_p + 1);
+            return new TablePath(namespace, namespace, qualifiedName, simpleName);
+        }
     }
 }

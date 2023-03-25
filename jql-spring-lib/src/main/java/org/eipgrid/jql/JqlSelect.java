@@ -4,15 +4,14 @@ import java.util.*;
 
 public class JqlSelect {
 
-    public static char All = '*';
-    public static char PrimaryKeys = '0';
+    public static final char LeafProperties = '*';
+    public static final char PrimaryKeys = '0';
 
     public static JqlSelect Auto = new JqlSelect((String) null);
 
     private final ArrayList<String> propertyNames = new ArrayList<>();
 
-    private final HashMap<String, Object> selectionMap = new HashMap<>();
-    // QResultMapping resultMapping;
+    private ResultMap selectionMap = new ResultMap(false);
 
     private JqlSelect(String selectSpec) {
         parsePropertySelection(selectSpec);
@@ -23,6 +22,7 @@ public class JqlSelect {
             parsePropertySelection(s);
         }
     }
+
 
     private static String trimToNull(String s) {
         if (s != null) {
@@ -56,52 +56,36 @@ public class JqlSelect {
         }
     }
 
-    private HashMap<String, Object> makeSubMap(HashMap<String, Object> base, String key) {
-        int p = key.indexOf('.');
-        if (p > 0) {
-            String subKey = key.substring(0, p);
-            base = makeSubMap(base, subKey);
-            key = key.substring(p + 1).trim();
-            if (key.length() == 0) {
-                return base;
-            }
-        }
-        HashMap<String, Object> subMap = (HashMap<String, Object>) base.get(key);
-        if (subMap == null) {
-            subMap = new HashMap<>();
-            base.put(key, subMap);
-        }
-        return subMap;
-    }
 
-    private int parsePropertySelection(HashMap<String, Object> map, String base, int start, String select) {
+    private int parsePropertySelection(ResultMap resultMap, String base, int start, String select) {
         String key;
         int idx;
         scan_key: for (idx = start; idx < select.length(); idx ++) {
             int ch = select.charAt(idx);
             switch (ch) {
-                case '(':
+                case '(': {
                     key = select.substring(start, idx);
-                    HashMap<String, Object> subMap = makeSubMap(map, key);
+                    ResultMap subMap = resultMap.makeSubMap(key);
                     idx = parsePropertySelection(subMap, base + key + '.', idx + 1, select);
                     start = idx + 1;
                     break;
-
+                }
                 case ')':
                     break scan_key;
 
-                case ',':
+                case ',': {
                     key = select.substring(start, idx).trim();
-                    makeSubMap(map, key);
+                    resultMap.addProperty(key);
                     propertyNames.add(base + key);
                     start = idx + 1;
                     break;
+                }
             }
         }
         if (start < idx) {
             key = select.substring(start, idx).trim();
             if (key.length() > 0) {
-                makeSubMap(map, key);
+                resultMap.addProperty(key);
                 propertyNames.add(base + key);
             }
         }
@@ -109,7 +93,7 @@ public class JqlSelect {
     }
 
 
-    public Map<String, Object> getResultMappings() {
+    public ResultMap getPropertyMap() {
         return selectionMap;
     }
 
@@ -117,4 +101,66 @@ public class JqlSelect {
         return propertyNames;
     }
 
+    public static class ResultMap extends HashMap<String, ResultMap> {
+        private boolean selectAllLeaf;
+        private boolean selectAllPrimaryKeys;
+        private static ResultMap defaultMap = new ResultMap(true);
+
+        public ResultMap(boolean selectAllLeaf) {
+            this.selectAllLeaf = selectAllLeaf;
+        }
+
+        public boolean isAllLeafSelected() {
+            return selectAllLeaf;
+        }
+
+        public boolean isIdSelected() {
+            return selectAllPrimaryKeys;
+        }
+
+        final void addProperty(String key) {
+            int p = key.lastIndexOf('.');
+            ResultMap base = this;
+            if (p > 0) {
+                String subKey = key.substring(0, p);
+                base = base.makeSubMap(subKey);
+                key = key.substring(p + 1).trim();
+            }
+
+            if (key.length() == 1) {
+                switch (key.charAt(0)) {
+                    case LeafProperties:
+                        base.selectAllLeaf = true;
+                        return;
+                    case PrimaryKeys:
+                        base.selectAllPrimaryKeys = true;
+                        return;
+                    default:
+                }
+            }
+
+            base.put(key, defaultMap);
+        }
+
+        final ResultMap makeSubMap(String key) {
+            int p = key.indexOf('.');
+            ResultMap base = this;
+            if (p > 0) {
+                String subKey = key.substring(0, p);
+                base = base.makeSubMap(subKey);
+                key = key.substring(p + 1).trim();
+                if (key.length() == 0) {
+                    return base;
+                }
+            }
+
+            ResultMap subMap = base.get(key);
+            if (subMap == null || subMap == defaultMap) {
+                subMap = new ResultMap(subMap != null);
+                base.put(key, subMap);
+            }
+            return subMap;
+        }
+
+    }
 }

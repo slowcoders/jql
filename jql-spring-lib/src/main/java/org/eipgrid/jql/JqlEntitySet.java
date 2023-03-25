@@ -6,6 +6,12 @@ import java.util.*;
 
 public interface JqlEntitySet<ENTITY, ID> {
 
+    enum InsertPolicy {
+        ErrorOnConflict,
+        IgnoreOnConflict,
+        UpdateOnConflict,
+    }
+
     JqlQuery<ENTITY> createQuery(Map<String, Object> jqlFilter);
 
     List<ENTITY> findAll(JqlSelect select, Sort sort);
@@ -26,9 +32,21 @@ public interface JqlEntitySet<ENTITY, ID> {
 
     List<ENTITY> find(Iterable<ID> idList, JqlSelect select);
 
-    List<ID> insert(Collection<? extends Map<String, Object>> entities);
-    
-    ENTITY insert(Map<String, Object> properties);
+    List<ID> insert(Collection<? extends Map<String, Object>> entities, InsertPolicy insertPolicy);
+    default List<ID> insert(Collection<? extends Map<String, Object>> entities) {
+        return insert(entities, InsertPolicy.ErrorOnConflict);
+    }
+    default List<ID> insertOrUpdate(Collection<? extends Map<String, Object>> entities) {
+        return insert(entities, InsertPolicy.UpdateOnConflict);
+    }
+
+    ENTITY insert(Map<String, Object> properties, InsertPolicy insertPolicy);
+    default ENTITY insert(Map<String, Object> properties) {
+        return insert(properties, InsertPolicy.ErrorOnConflict);
+    }
+    default ENTITY insertOrUpdate(Map<String, Object> properties) {
+        return insert(properties, InsertPolicy.UpdateOnConflict);
+    }
 
     void update(Iterable<ID> idList, Map<String, Object> properties);
     default void update(ID id, Map<String, Object> updateSet) {

@@ -2,6 +2,7 @@ package org.eipgrid.jql.jdbc.storage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.eipgrid.jql.JqlRepository;
+import org.eipgrid.jql.jdbc.JdbcStorage;
 import org.eipgrid.jql.jpa.JpaUtils;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QJoin;
@@ -15,7 +16,7 @@ import java.util.*;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class JdbcSchema extends QSchema {
 
-    private final JdbcSchemaLoader schemaLoader;
+    private final JdbcStorage schemaLoader;
 
     private HashMap<String, ArrayList<String>> uniqueConstraints = new HashMap<>();
     private final HashMap<String, JoinConstraint> fkConstraints = new HashMap<>();
@@ -25,12 +26,12 @@ public class JdbcSchema extends QSchema {
     private Class<?> idType;
     private JoinMap importedByFkJoinMap;
 
-    protected JdbcSchema(JdbcSchemaLoader schemaLoader, String tableName, Class<?> ormType) {
+    protected JdbcSchema(JdbcStorage schemaLoader, String tableName, Class<?> ormType) {
         super(tableName, ormType);
         this.schemaLoader = schemaLoader;
     }
 
-    public final JdbcSchemaLoader getStorage() {
+    public final JdbcStorage getStorage() {
         return schemaLoader;
     }
 

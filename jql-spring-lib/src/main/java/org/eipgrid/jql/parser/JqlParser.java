@@ -96,11 +96,10 @@ public class JqlParser {
             QSchema schema = subFilter.getSchema();
             if (schema != null) {
                 column = schema.getColumn(columnName);
-                Class<?> fieldType = column.getValueType();
-                Class<?> accessType = op.getAccessType(value, fieldType);
                 if (value != null) {
+                    Class<?> fieldType = column.getValueType();
+                    Class<?> accessType = op.getAccessType(value, fieldType);
                     value = om.convertValue(value, accessType);
-//                      value = conversionService.convert(value, accessType);
                 }
             }
             else {
@@ -142,7 +141,7 @@ public class JqlParser {
     }
 
 
-    enum NodeType {
+    public enum NodeType {
         Leaf,
         Entity,
         Entities

@@ -1,5 +1,6 @@
 package org.eipgrid.jql.parser;
 
+import org.eipgrid.jql.JqlSelect;
 import org.eipgrid.jql.schema.QSchema;
 
 import java.util.HashMap;
@@ -50,9 +51,6 @@ public abstract class EntityFilter {
 
     TableFilter asTableFilter() { return null; }
 
-    void setSelectedProperties(String[] selectedKeys) {
-    }
-
 
     final EntityFilter getFilterNode(String key, JqlParser.NodeType nodeType) {
         if (key == null) return this;
@@ -78,4 +76,13 @@ public abstract class EntityFilter {
     protected void addSelectedColumn(String key) {
 
     }
+
+    public boolean visitPredicates(PredicateVisitor visitor) {
+        Expression ps = this.getPredicates();
+        if (ps.isEmpty()) return false;
+        ps.accept(visitor);
+        return true;
+    }
+
+    protected void addSelection(JqlSelect.ResultMap resultMap) {}
 }

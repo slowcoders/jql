@@ -1,10 +1,12 @@
 package org.eipgrid.jql.jdbc.storage;
 
+import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.jdbc.JdbcQuery;
 import org.eipgrid.jql.JqlQuery;
+import org.eipgrid.jql.schema.QJoin;
+import org.eipgrid.jql.schema.QResultMapping;
 import org.eipgrid.jql.js.JsType;
 import org.eipgrid.jql.schema.*;
-import org.eipgrid.jql.parser.Expression;
 import org.eipgrid.jql.parser.JqlFilter;
 import org.eipgrid.jql.parser.EntityFilter;
 import org.eipgrid.jql.util.SourceWriter;
@@ -12,10 +14,12 @@ import org.springframework.data.domain.Sort;
 
 import java.util.*;
 
-public class SqlGenerator extends SqlConverter implements QueryGenerator {
+public abstract class SqlGenerator extends SqlConverter implements QueryGenerator {
 
     private final boolean isNativeQuery;
     private EntityFilter currentNode;
+
+    private List<QResultMapping> resultMappings;
 
     public SqlGenerator(boolean isNativeQuery) {
         super(new SourceWriter('\''));
@@ -28,9 +32,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
 
     protected void writeFilter(EntityFilter jql) {
         currentNode = jql;
-        Expression ps = jql.getPredicates();
-        if (!ps.isEmpty()) {
-            ps.accept(this);
+        if (jql.visitPredicates(this)) {
             sw.write(" AND ");
         }
         for (EntityFilter child : jql.getChildNodes()) {
@@ -106,8 +108,13 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
     protected void writeWhere(JqlFilter where) {
         if (!where.isEmpty()) {
             sw.write("\nWHERE ");
+            int len = sw.length();
             writeFilter(where);
-            if (sw.endsWith(" AND ")) {
+            if (sw.length() == len) {
+                // no conditions.
+                sw.shrinkLength(7);
+            }
+            else if (sw.endsWith(" AND ")) {
                 sw.shrinkLength(5);
             }
         }
@@ -119,7 +126,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
 
     private void writeFrom(JqlFilter where, String tableName, boolean ignoreEmptyFilter) {
         sw.write("FROM ").write(tableName).write(isNativeQuery ? " as " : " ").write(where.getMappingAlias());
-        for (QResultMapping fetch : where.getResultMappings()) {
+        for (QResultMapping fetch : this.resultMappings) {
             QJoin join = fetch.getEntityJoin();
             if (join == null) continue;
 
@@ -164,6 +171,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
     }
 
     public String createCountQuery(JqlFilter where) {
+        this.resultMappings = where.getResultMappings();
         sw.write("\nSELECT count(*) ");
         writeFrom(where);
         writeWhere(where);
@@ -174,7 +182,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
     private boolean needDistinctPagination(JqlFilter where) {
         if (!where.hasArrayDescendantNode()) return false;
 
-        for (QResultMapping mapping : where.getResultMappings()) {
+        for (QResultMapping mapping : this.resultMappings) {
             QJoin join = mapping.getEntityJoin();
             if (join == null) continue;
 
@@ -189,8 +197,8 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
 
     public String createSelectQuery(JdbcQuery query) {
         sw.reset();
+        this.resultMappings = query.getResultMappings();
         JqlFilter where = query.getFilter();
-        where.setSelectedProperties(query.getSelection().getPropertyNames());
 
         String tableName = isNativeQuery ? where.getTableName() : where.getSchema().getEntityType().getName();
         boolean need_complex_pagination = isNativeQuery && query.getLimit() > 0 && needDistinctPagination(where);
@@ -212,7 +220,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
             sw.write(where.getMappingAlias()).write(',');
         }
         else {
-            for (QResultMapping mapping : where.getResultMappings()) {
+            for (QResultMapping mapping : this.resultMappings) {
                 sw.write('\t');
                 String alias = mapping.getMappingAlias();
                 for (QColumn col : mapping.getSelectedColumns()) {
@@ -250,7 +258,7 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
             });
         }
         if (isNativeQuery && need_joined_result_set_ordering) {
-            for (QResultMapping mapping : where.getResultMappings()) {
+            for (QResultMapping mapping : this.resultMappings) {
                 if (!mapping.hasArrayDescendantNode()) continue;
                 if (mapping != where && !mapping.isArrayNode()) continue;
                 String table = mapping.getMappingAlias();
@@ -275,19 +283,21 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         if (limit > 0) sw.write("\nLIMIT " + limit);
     }
 
-
-    public String createUpdateQuery(JqlFilter where, Map<String, Object> updateSet) {
-        sw.write("\nUPDATE ").write(where.getTableName()).write(" ").write(where.getMappingAlias()).writeln(" SET");
-
+    protected void writeUpdateValueSet(QSchema schema, Map<String, Object> updateSet) {
         for (Map.Entry<String, Object> entry : updateSet.entrySet()) {
             String key = entry.getKey();
-            QColumn col = where.getSchema().getColumn(key);
+            QColumn col = schema.getColumn(key);
             Object value = BatchUpsert.convertJsonValueToColumnValue(col, entry.getValue());
             sw.write("  ");
             sw.write(key).write(" = ").writeValue(value);
             sw.write(",\n");
         }
         sw.replaceTrailingComma("\n");
+    }
+
+    public String createUpdateQuery(JqlFilter where, Map<String, Object> updateSet) {
+        sw.write("\nUPDATE ").write(where.getTableName()).write(" ").write(where.getMappingAlias()).writeln(" SET");
+        writeUpdateValueSet(where.getSchema(), updateSet);
         this.writeWhere(where);
         String sql = sw.reset();
         return sql;
@@ -316,11 +326,9 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
         return sql;
     }
 
-    public String createInsertStatement(QSchema schema, Map entity, boolean ignoreConflict) {
-
+    protected void writeInsertStatementInternal(QSchema schema, Map entity) {
         Set<String> keys = ((Map<String, ?>)entity).keySet();
-        sw.writeln();
-        sw.write(getCommand(SqlConverter.Command.Insert)).write(" INTO ").write(schema.getTableName()).writeln("(");
+        sw.writeln("(");
         sw.incTab();
         for (String name : keys) {
             sw.write(schema.getColumn(name).getPhysicalName());
@@ -335,28 +343,22 @@ public class SqlGenerator extends SqlConverter implements QueryGenerator {
             sw.writeValue(v).write(", ");
         }
         sw.replaceTrailingComma(")");
-        if (ignoreConflict) {
-            sw.write("\nON CONFLICT DO NOTHING");
-        }
-        String sql = sw.reset();
-        return sql;
     }
 
-    public String prepareBatchInsertStatement(QSchema schema, boolean ignoreConflict) {
-        sw.writeln();
-        sw.write(getCommand(SqlConverter.Command.Insert)).write(" INTO ").write(schema.getTableName()).writeln("(");
-        for (QColumn col : schema.getWritableColumns()) {
+    public abstract String createInsertStatement(QSchema schema, Map<String, Object> entity, JqlEntitySet.InsertPolicy insertPolicy);
+
+
+    protected void writePreparedInsertStatementValueSet(List<QColumn> columns) {
+        sw.writeln("(");
+        for (QColumn col : columns) {
             sw.write(col.getPhysicalName()).write(", ");
         }
         sw.replaceTrailingComma("\n) VALUES (");
-        for (QColumn column : schema.getWritableColumns()) {
-            sw.write(column.isJsonNode() ? "?::jsonb, " : "?,");
+        for (QColumn column : columns) {
+            sw.write("?,");
         }
         sw.replaceTrailingComma(")");
-        if (ignoreConflict) {
-            sw.write("\nON CONFLICT DO NOTHING");
-        }
-        String sql = sw.reset();
-        return sql;
     }
+
+    public abstract String prepareBatchInsertStatement(JdbcSchema schema, JqlEntitySet.InsertPolicy insertPolicy);
 }

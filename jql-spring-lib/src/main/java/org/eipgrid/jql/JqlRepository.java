@@ -1,7 +1,6 @@
 package org.eipgrid.jql;
 
 import org.eipgrid.jql.schema.QSchema;
-import org.springframework.data.domain.Sort;
 
 import java.util.*;
 
@@ -30,33 +29,7 @@ public abstract class JqlRepository<ID> implements JqlEntitySet<Map, ID> {
         return schema.hasGeneratedId();
     }
 
-//    public abstract <T> List<T> findAll(JqlSelect select, Sort sort, Class<T> entityType);
-//
-//    public final List<Map> findAll(JqlSelect select, Sort sort) {
-//        return findAll(select, sort, rawEntityType);
-//    }
-//    public abstract <T> List<T> find(Iterable<ID> idList, JqlSelect select, Class<T> entityType);
-//
-//    public final List<Map> find(Iterable<ID> idList, JqlSelect select) {
-//        return find(idList, select, rawEntityType);
-//    }
-//
-//    public abstract <T> T find(ID id, JqlSelect select, Class<T> entityType);
-//
-//    public final Map find(ID id, JqlSelect select) {
-//        return find(id, select, rawEntityType);
-//    }
-//
-//    public abstract <T> List<T> find(JqlQuery query0, Class<T> entityType);
-//
-//
-//    public List<Map> find(JqlQuery query, OutputFormat outputType) {
-//        return find(query, Map.class);
-//    }
-
-
-
-    public abstract List<ID> insert(Collection<? extends Map<String, Object>> entities);
+    public abstract List<ID> insert(Collection<? extends Map<String, Object>> entities, InsertPolicy insertPolicy);
 
     public abstract void update(Iterable<ID> idList, Map<String, Object> updateSet);
 

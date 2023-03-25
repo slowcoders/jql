@@ -2,6 +2,7 @@ package org.eipgrid.jql.jdbc.storage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.jdbc.output.BatchPreparedStatementSetterWithKeyHolder;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
@@ -22,8 +23,9 @@ public class BatchUpsert<ID> implements BatchPreparedStatementSetterWithKeyHolde
 
     private static ObjectMapper objectMapper = new ObjectMapper();
 
-    public BatchUpsert(QSchema schema, Collection<Map<String, Object>> entities, boolean ignoreConflict) {
-        this.sql = new SqlGenerator(true).prepareBatchInsertStatement(schema, ignoreConflict);
+    public BatchUpsert(JdbcSchema schema, Collection<Map<String, Object>> entities, JqlEntitySet.InsertPolicy insertPolicy) {
+        QueryGenerator gen = schema.getStorage().createQueryGenerator();
+        this.sql = gen.prepareBatchInsertStatement(schema, insertPolicy);
         this.schema = schema;
         this.columns = schema.getWritableColumns();
         this.entities = entities.toArray(new Map[entities.size()]);
