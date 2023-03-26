@@ -115,6 +115,20 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
             ENTITY entity = (ENTITY)table.insert(properties);
             return entity;
         }
+
+        @PutMapping(path = "/add-all", consumes = {MediaType.APPLICATION_JSON_VALUE})
+        @Operation(summary = "엔터티 추가")
+        @Transactional
+        @ResponseBody
+        default <ENTITY> ENTITY addAll(
+                @RequestParam(value = "onConflict", required = false) String onConflict,
+                @Schema(implementation = Object.class)
+                @RequestBody List<Map<String, Object>> entities) throws Exception {
+            JqlEntitySet.InsertPolicy insertPolicy = parseInsertPolicy(onConflict);
+            JqlEntitySet<?, ID> table = getEntitySet();
+            ENTITY entity = (ENTITY)table.insert(entities, insertPolicy);
+            return entity;
+        }
     }
 
     interface Update<ID> extends JqlEntitySetController<ID> {
@@ -138,11 +152,11 @@ public interface JqlEntitySetController<ID> extends JqlRestApi {
     }
 
     interface Delete<ID> extends JqlEntitySetController<ID> {
-        @DeleteMapping("/{idList}")
+        @DeleteMapping("/{id}")
         @ResponseBody
         @Operation(summary = "엔터티 삭제")
         @Transactional
-        default Collection<ID> delete(@PathVariable("idList") Collection<ID> idList) {
+        default Collection<ID> delete(@PathVariable("id") Collection<ID> idList) {
             getEntitySet().delete(idList);
             return idList;
         }

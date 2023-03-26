@@ -20,6 +20,7 @@ public abstract class SqlGenerator extends SqlConverter implements QueryGenerato
     private EntityFilter currentNode;
 
     private List<QResultMapping> resultMappings;
+    private boolean noAliases;
 
     public SqlGenerator(boolean isNativeQuery) {
         super(new SourceWriter('\''));
@@ -45,65 +46,18 @@ public abstract class SqlGenerator extends SqlConverter implements QueryGenerato
     protected void writeQualifiedColumnName(QColumn column, Object value) {
         if (!currentNode.isJsonNode()) {
             String name = isNativeQuery ? column.getPhysicalName() : column.getJsonKey();
-            sw.write(this.currentNode.getMappingAlias()).write('.').write(name);
+            if (!noAliases) {
+                sw.write(this.currentNode.getMappingAlias()).write('.');
+            }
+            sw.write(name);
         }
         else {
-            sw.write('(');
-            writeJsonPath(currentNode);
             JsType valueType = value == null ? null : JsType.of(value.getClass());
-            if (valueType == JsType.Text) {
-                sw.write('>');
-                valueType = null;
-            }
-            sw.writeQuoted(column.getJsonKey());
-            sw.write(')');
-            if (valueType != null) {
-                writeTypeCast(valueType);
-            }
+            writeJsonPath(currentNode, column, valueType);
         }
     }
 
-    private void writeJsonPath(EntityFilter node) {
-        if (node.isJsonNode()) {
-            EntityFilter parent = node.getParentNode();
-            writeJsonPath(parent);
-            if (parent.isJsonNode()) {
-                sw.writeQuoted(node.getMappingAlias());
-            } else {
-                sw.write(node.getMappingAlias());
-            }
-            sw.write("->");
-        } else {
-            sw.write(node.getMappingAlias()).write('.');
-        }
-    }
-
-    private void writeTypeCast(JsType vf) {
-        switch (vf) {
-            case Boolean:
-                sw.write("::BOOLEAN");
-            case Integer:
-            case Float:
-                sw.write("::NUMERIC");
-                break;
-            case Date:
-                sw.write("::DATE");
-                break;
-            case Time:
-                sw.write("::TIME");
-                break;
-            case Timestamp:
-                sw.write("::TIMESTAMP");
-                break;
-            case Text:
-                sw.write("::TEXT");
-                break;
-            case Object:
-            case Array:
-                sw.write("::JSONB");
-                break;
-        }
-    }
+    protected abstract void writeJsonPath(EntityFilter node, QColumn column, JsType valueType);
 
     protected void writeWhere(JqlFilter where) {
         if (!where.isEmpty()) {
@@ -125,7 +79,10 @@ public abstract class SqlGenerator extends SqlConverter implements QueryGenerato
     }
 
     private void writeFrom(JqlFilter where, String tableName, boolean ignoreEmptyFilter) {
-        sw.write("FROM ").write(tableName).write(isNativeQuery ? " as " : " ").write(where.getMappingAlias());
+        sw.write("FROM ").write(tableName);
+        if (!noAliases) {
+            sw.write(isNativeQuery ? " as " : " ").write(where.getMappingAlias());
+        }
         for (QResultMapping fetch : this.resultMappings) {
             QJoin join = fetch.getEntityJoin();
             if (join == null) continue;
@@ -279,8 +236,9 @@ public abstract class SqlGenerator extends SqlConverter implements QueryGenerato
     private void writePagination(JqlQuery pagination) {
         int offset = pagination.getOffset();
         int limit  = pagination.getLimit();
-        if (offset > 0) sw.write("\nOFFSET " + offset);
+        // 참고) MariaDB/Mysql 의 경우, Offset 은 Limit 의 하위 statement 이다.
         if (limit > 0) sw.write("\nLIMIT " + limit);
+        if (offset > 0) sw.write("\nOFFSET " + offset);
     }
 
     protected void writeUpdateValueSet(QSchema schema, Map<String, Object> updateSet) {
@@ -306,6 +264,8 @@ public abstract class SqlGenerator extends SqlConverter implements QueryGenerato
 
     public String createDeleteQuery(JqlFilter where) {
         sw.write("\nDELETE ");
+        this.resultMappings = Collections.emptyList();
+        this.noAliases = true;
         this.writeFrom(where);
         this.writeWhere(where);
         String sql = sw.reset();
@@ -345,10 +305,10 @@ public abstract class SqlGenerator extends SqlConverter implements QueryGenerato
         sw.replaceTrailingComma(")");
     }
 
-    public abstract String createInsertStatement(QSchema schema, Map<String, Object> entity, JqlEntitySet.InsertPolicy insertPolicy);
+    public abstract String createInsertStatement(JdbcSchema schema, Map<String, Object> entity, JqlEntitySet.InsertPolicy insertPolicy);
 
 
-    protected void writePreparedInsertStatementValueSet(List<QColumn> columns) {
+    protected void writePreparedInsertStatementValueSet(List<JdbcColumn> columns) {
         sw.writeln("(");
         for (QColumn col : columns) {
             sw.write(col.getPhysicalName()).write(", ");

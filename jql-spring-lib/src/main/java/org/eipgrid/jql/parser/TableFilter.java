@@ -183,7 +183,9 @@ class TableFilter extends EntityFilter implements QResultMapping {
             String key = entry.getKey();
             QColumn column = schema.findColumn(key);
             if (column != null) {
-                if (!allLeaf) this.addSelectedColumn(column);
+                if (!allLeaf || column.isForeignKey() || column.isJsonNode()) {
+                    this.addSelectedColumn(column);
+                }
             }
             else {
                 EntityFilter scope = this.makeSubNode(key, JqlParser.NodeType.Entity);

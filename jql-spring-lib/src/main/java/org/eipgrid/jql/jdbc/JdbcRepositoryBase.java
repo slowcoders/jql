@@ -128,9 +128,8 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
     public List<ID> insert(Collection<? extends Map<String, Object>> entities, InsertPolicy insertPolicy) {
         if (entities.isEmpty()) return Collections.emptyList();
 
-        BatchUpsert batch = new BatchUpsert((JdbcSchema) this.getSchema(), entities, insertPolicy);
-        jdbc.batchUpdate(batch.getSql(), batch);
-        return batch.getEntityIDs();
+        List<ID> idList = BatchUpsert.execute(jdbc, (JdbcSchema) this.getSchema(), entities, insertPolicy);
+        return idList;
     }
 
     public ID insert_raw(Map<String, Object> properties, InsertPolicy insertPolicy) {
@@ -140,7 +139,7 @@ public abstract class JdbcRepositoryBase<ID> extends JqlRepository<ID> {
 
     public Map insert(Map<String, Object> properties, InsertPolicy insertPolicy) {
         ID id = insert_raw(properties, insertPolicy);
-        return get(id);
+        return find(id, JqlSelect.of(properties));
     }
 
     @Override

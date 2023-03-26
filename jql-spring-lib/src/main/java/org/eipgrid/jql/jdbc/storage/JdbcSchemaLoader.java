@@ -183,24 +183,8 @@ public abstract class JdbcSchemaLoader {
 
     public abstract String getTableComment(String tableName);
 
+    protected abstract Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException;
 
-    private Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
-        HashMap<String, String> comments = new HashMap<>();
-        String sql = "SELECT c.column_name, pgd.description\n" +
-                "FROM information_schema.columns c\n" +
-                "    inner join pg_catalog.pg_statio_all_tables as st on (c.table_name = st.relname)\n" +
-                "    inner join pg_catalog.pg_description pgd on (pgd.objoid=st.relid and\n" +
-                "          pgd.objsubid=c.ordinal_position)\n" +
-                "where c.table_schema = '" + tablePath.getSchema() + "' and c.table_name = '" + tablePath.getSimpleName() + "';\n";
-
-        ResultSet rs = conn.createStatement().executeQuery(sql);
-        while (rs.next()) {
-            String columnName = rs.getString("column_name");
-            String comment = rs.getString("description");
-            comments.put(columnName, comment);
-        }
-        return comments;
-    }
 
     public void dumResultSet(ResultSet rs) throws SQLException {
         ResultSetMetaData meta = rs.getMetaData();

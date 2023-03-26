@@ -11,7 +11,7 @@ public class JqlSelect {
 
     private final ArrayList<String> propertyNames = new ArrayList<>();
 
-    private ResultMap selectionMap = new ResultMap(false);
+    private ResultMap resultMap = new ResultMap(false);
 
     private JqlSelect(String selectSpec) {
         parsePropertySelection(selectSpec);
@@ -22,7 +22,6 @@ public class JqlSelect {
             parsePropertySelection(s);
         }
     }
-
 
     private static String trimToNull(String s) {
         if (s != null) {
@@ -38,7 +37,6 @@ public class JqlSelect {
         JqlSelect select = new JqlSelect(selectSpec);
         return select;
     }
-
     public static JqlSelect of(String[] selectSpec) {
         if (selectSpec == null || selectSpec.length == 0) return Auto;
 
@@ -46,11 +44,34 @@ public class JqlSelect {
         return select;
     }
 
+    public static JqlSelect of(Map<String, Object> selectSpec) {
+        if (selectSpec == null || selectSpec.isEmpty()) return Auto;
+
+        JqlSelect select = JqlSelect.of("*");
+        select.parsePropertySelection(select.resultMap, "", selectSpec);
+        return select;
+    }
+
+    private void parsePropertySelection(ResultMap resultMap, String baseKey, Map<String, Object> selectSpec) {
+        for (Map.Entry<String, Object> e : selectSpec.entrySet()) {
+            String key = e.getKey();
+            if (key.indexOf('.') > 0) {
+                parsePropertySelection(resultMap, baseKey, 0, key);
+            }
+            Object value = e.getValue();
+            if (value instanceof Map) {
+                parsePropertySelection(resultMap.makeSubMap(key), baseKey + key + '.', (Map<String, Object>) value);
+            } else {
+                resultMap.selectAllLeaf = true;
+            }
+        }
+    }
+
     private void parsePropertySelection(String selector) {
         selector = trimToNull(selector);
         if (selector == null) return;
 
-        int idx = parsePropertySelection(selectionMap, "", 0, selector);
+        int idx = parsePropertySelection(resultMap, "", 0, selector);
         if (idx < selector.length()) {
             throw new IllegalArgumentException("Syntax error at " + idx + ": [" + selector  + "]");
         }
@@ -94,7 +115,7 @@ public class JqlSelect {
 
 
     public ResultMap getPropertyMap() {
-        return selectionMap;
+        return resultMap;
     }
 
     public List<String> getPropertyNames() {

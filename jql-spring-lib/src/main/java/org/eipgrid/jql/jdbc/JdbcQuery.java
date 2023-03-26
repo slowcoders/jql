@@ -80,11 +80,13 @@ public class JdbcQuery<ENTITY> extends JqlQuery<ENTITY> {
 
     public String appendPaginationQuery(String sql) {
         String s = "";
+        long limit = getLimit();
+        if (limit > 0 || getOffset() > 0) {
+            if (limit <= 0) limit = Long.MAX_VALUE;
+            s += "\nLIMIT " + limit;
+        }
         if (getOffset() > 0) {
             s += "\nOFFSET " + getOffset();
-        }
-        if (getLimit() > 0) {
-            s += "\nLIMIT " + getLimit();
         }
         if (s.length() > 0) {
             sql += s;

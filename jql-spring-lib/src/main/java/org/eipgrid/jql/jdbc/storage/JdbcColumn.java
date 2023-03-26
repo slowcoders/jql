@@ -134,6 +134,7 @@ public class JdbcColumn extends QColumn {
         int colType = md.getColumnType(col);
         try {
             switch (colTypeName) {
+                case "longtext": // <- mariadb 에서 json 을 저장하는 type. 일단 json 으로 분류하여, leafProperty 에서 제외.
                 case "json":
                 case "jsonb":
                     return JsonNode.class;

@@ -36,9 +36,10 @@ public class Character implements java.io.Serializable {
     private Float mass;
 
     @Getter @Setter
-    @Column(name = "metadata", nullable = true, columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = "io.hypersistence.utils.hibernate.type.json.JsonType")
-    private com.fasterxml.jackson.databind.JsonNode metadata;
+    @Column(name = "metadata", nullable = true) //, columnDefinition = "jsonb")
+//    @org.hibernate.annotations.Type(type = "io.hypersistence.utils.hibernate.type.json.JsonType")
+//    private com.fasterxml.jackson.databind.JsonNode metadata;
+    private String metadata;
 
     @Getter @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "pilot")

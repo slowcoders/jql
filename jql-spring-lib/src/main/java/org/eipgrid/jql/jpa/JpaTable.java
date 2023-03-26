@@ -67,25 +67,16 @@ public abstract class JpaTable<ENTITY, ID> extends JqlAdapter<ENTITY, ID> {
 
     public ENTITY insertEntity(ENTITY entity, InsertPolicy insertPolicy) {
         ENTITY newEntity = entity;
-        boolean ignoreOnConflict = false;
-        switch (insertPolicy) {
-            case IgnoreOnConflict:
-                ignoreOnConflict = true;
-            case ErrorOnConflict:
-                ID id = getEntityId(entity);
-                if (id != null) {
-                    if (!ignoreOnConflict && repository.hasGeneratedId()) {
-                        throw new IllegalArgumentException("Entity can not be created with id");
-                    } else if (getEntityManager().find(getEntityType(), id) != null) {
-                        if (ignoreOnConflict) return entity;
-                        throw new IllegalArgumentException("Entity id is already exist: " + id);
-                    }
-                }
-                // no-break;
-            case UpdateOnConflict:
-                newEntity = insertOrUpdate(entity);
-                break;
+
+        if (repository.hasGeneratedId()) {
+            ID id = getEntityId(entity);
+            if (id != null && insertPolicy != InsertPolicy.IgnoreOnConflict) {
+                throw new IllegalArgumentException("Entity can not be created with generated id");
+            }
+            return entity;
         }
+
+        newEntity = insertOrUpdate(entity);
         return newEntity;
     }
 

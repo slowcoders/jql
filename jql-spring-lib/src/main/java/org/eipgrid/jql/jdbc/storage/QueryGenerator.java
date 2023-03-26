@@ -15,6 +15,8 @@ public interface QueryGenerator {
 
     String createDeleteQuery(JqlFilter where);
 
+    String createInsertStatement(JdbcSchema schema, Map<String, Object> entity, JqlEntitySet.InsertPolicy insertPolicy);
+
     String prepareBatchInsertStatement(JdbcSchema schema, JqlEntitySet.InsertPolicy insertPolicy);
 
 }

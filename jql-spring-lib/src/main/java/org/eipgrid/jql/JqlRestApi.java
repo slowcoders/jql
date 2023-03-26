@@ -133,4 +133,25 @@ public interface JqlRestApi {
         return Sort.by(_orders);
     }
 
+    default JqlEntitySet.InsertPolicy parseInsertPolicy(String onConflict) {
+        JqlEntitySet.InsertPolicy insertPolicy;
+        if (onConflict == null) {
+            insertPolicy = JqlEntitySet.InsertPolicy.ErrorOnConflict;
+        } else {
+            switch (onConflict.toLowerCase()) {
+                case "error":
+                    insertPolicy = JqlEntitySet.InsertPolicy.ErrorOnConflict;
+                    break;
+                case "ignore":
+                    insertPolicy = JqlEntitySet.InsertPolicy.IgnoreOnConflict;
+                    break;
+                case "update":
+                    insertPolicy = JqlEntitySet.InsertPolicy.UpdateOnConflict;
+                    break;
+                default:
+                    throw new IllegalArgumentException("unknown onConflict option: " + onConflict);
+            }
+        }
+        return insertPolicy;
+    }
 }

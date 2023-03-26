@@ -136,9 +136,25 @@ public interface JqlStorageController extends JqlRestApi {
                 @Schema(implementation = Object.class)
                 @RequestBody Map<String, Object> properties) throws Exception {
             JqlEntitySet repository = getRepository(table);
-            Object id = repository.insert(properties);
-            return (ENTITY)repository.find(id, null);
+            Object created = repository.insert(properties);
+            return (ENTITY) created;
         }
+
+        @PutMapping(path = "/{table}/add-all", consumes = {MediaType.APPLICATION_JSON_VALUE})
+        @Operation(summary = "엔터티 추가")
+        @Transactional
+        @ResponseBody
+        default <ID> List<ID> addAll(
+                @PathVariable("table") String table,
+                @RequestParam(value = "onConflict", required = false) String onConflict,
+                @Schema(implementation = Object.class)
+                @RequestBody List<Map<String, Object>> entities) throws Exception {
+            JqlEntitySet.InsertPolicy insertPolicy = parseInsertPolicy(onConflict);
+            JqlEntitySet repository = getRepository(table);
+            List<ID> res = (List<ID>)repository.insert(entities, insertPolicy);
+            return res;
+        }
+
     }
 
     interface Update extends JqlStorageController {

@@ -6,6 +6,7 @@ import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.jdbc.output.BatchPreparedStatementSetterWithKeyHolder;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,12 +24,25 @@ public class BatchUpsert<ID> implements BatchPreparedStatementSetterWithKeyHolde
 
     private static ObjectMapper objectMapper = new ObjectMapper();
 
-    public BatchUpsert(JdbcSchema schema, Collection<Map<String, Object>> entities, JqlEntitySet.InsertPolicy insertPolicy) {
+    private BatchUpsert(JdbcSchema schema, Collection<Map<String, Object>> entities, JqlEntitySet.InsertPolicy insertPolicy) {
         QueryGenerator gen = schema.getStorage().createQueryGenerator();
         this.sql = gen.prepareBatchInsertStatement(schema, insertPolicy);
         this.schema = schema;
         this.columns = schema.getWritableColumns();
         this.entities = entities.toArray(new Map[entities.size()]);
+    }
+
+    public static <ID> List<ID> execute(JdbcTemplate jdbc, JdbcSchema schema, Collection<? extends Map<String, Object>> entities, JqlEntitySet.InsertPolicy insertPolicy) {
+        if (schema.hasGeneratedId()) {
+            for (Map<String, Object> entity : entities) {
+                if (schema.getEnityId(entity) != null) {
+                    throw new IllegalArgumentException("Entity can not be created with generated id");
+                }
+            }
+        }
+        BatchUpsert batch = new BatchUpsert(schema, entities, insertPolicy);
+        BatchPreparedStatementSetterWithKeyHolder.batchUpdateWithKeyHolder(jdbc, batch.getSql(), batch);
+        return batch.getEntityIDs();
     }
 
     public String getSql() {

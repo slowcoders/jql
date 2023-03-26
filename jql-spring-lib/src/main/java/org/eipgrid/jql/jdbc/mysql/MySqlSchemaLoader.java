@@ -42,7 +42,7 @@ public class MySqlSchemaLoader extends JdbcSchemaLoader {
     }
 
 
-    private Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
+    protected Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
         HashMap<String, String> comments = new HashMap<>();
         String sql = "SELECT table_name, column_name, column_comment\n" +
                 "FROM information_schema.columns\n" +

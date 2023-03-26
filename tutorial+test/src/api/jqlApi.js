@@ -1,13 +1,6 @@
 import axios from "axios";
 
-const baseUrl = 'http://localhost:7007/api/jql/starwars/character';
-
-const default_options = {
-    select: "*",
-    sort: '',
-    limit: 0,
-    page: 0,
-}
+const g_serviceUrl = 'http://localhost:7007/api/jql/starwars/';
 
 function to_url_param(options) {
     if (!options) return "";
@@ -25,35 +18,50 @@ const http_options = {
         "Content-Type" : "application/json"
     }
 }
-async function http_get(command, options) {
-    const url = `${baseUrl}/${command}${to_url_param(options)}`
-    const response = await axios.get(url);
-    return response.data;
-}
 
-async function http_post(command, filter, options) {
-    const url = `${baseUrl}/${command}${to_url_param(options)}`
-    if (!filter) filter = {}
-    const response = await axios.post(url, filter, http_options);
-    return response.data;
-}
-
-export const jqlApi = {
-    cachedListTs: 0,
-    cachedList: null,
+export class JqlApi {
+    constructor(baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
     async count(filter) {
-        return await http_post('count', filter)
-    },
+        const url = `${this.baseUrl}/count`
+        filter = filter ? filter : {}
+        const response = await axios.post(url, filter, http_options);
+        return response.data;
+    }
 
     async find(filter, options) {
-        return await http_post('find', filter, options);
-    },
+        const url = `${this.baseUrl}/find${to_url_param(options)}`
+        filter = filter ? filter : {}
+        const response = await axios.post(url, filter, http_options);
+        return response.data;
+    }
+
+    async insert(entity, conflictPolicy) {
+        const url = `${this.baseUrl}${conflictPolicy ? "/?onConflict=" + conflictPolicy : "" }`
+        const response = await axios.put(url, entity, http_options);
+        return response.data;
+    }
+
+    async insertAll(entity, conflictPolicy) {
+        const url = `${this.baseUrl}/add-all${conflictPolicy ? "?onConflict=" + conflictPolicy : "" }`
+        const response = await axios.put(url, entity, http_options);
+        return response.data;
+    }
+
+    async delete(idList) {
+        const url = `${this.baseUrl}/${idList}`
+        const response = await axios.delete(url, http_options);
+        return response.data;
+    }
+
 
     async top(filter, options) {
         options = { ...options, page: -1, limit: 1 }
-        const res = await http_post('find', filter, options);
-        return res.content.length > 0 ? res.content[0] : null;
-    },
+        const data = await this.find(filter, options);
+        return data.content.length > 0 ? data.content[0] : null;
+    }
 }
 
+export const jqlApi = new JqlApi(g_serviceUrl + 'character');

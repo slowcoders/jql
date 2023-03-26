@@ -3,9 +3,12 @@ package org.eipgrid.jql.jdbc.mysql;
 import org.eipgrid.jql.JqlEntitySet;
 import org.eipgrid.jql.jdbc.storage.JdbcSchema;
 import org.eipgrid.jql.jdbc.storage.SqlGenerator;
+import org.eipgrid.jql.js.JsType;
+import org.eipgrid.jql.parser.EntityFilter;
 import org.eipgrid.jql.schema.QColumn;
 import org.eipgrid.jql.schema.QSchema;
 
+import java.util.List;
 import java.util.Map;
 
 public class MySqlGenerator extends SqlGenerator {
@@ -20,7 +23,7 @@ public class MySqlGenerator extends SqlGenerator {
         sw.write("INTO ").write(schema.getTableName());
     }
 
-    public String createInsertStatement(QSchema schema, Map<String, Object> entity, JqlEntitySet.InsertPolicy insertPolicy) {
+    public String createInsertStatement(JdbcSchema schema, Map<String, Object> entity, JqlEntitySet.InsertPolicy insertPolicy) {
         this.writeInsertHeader(schema, insertPolicy);
 
         super.writeInsertStatementInternal(schema, entity);
@@ -48,7 +51,7 @@ public class MySqlGenerator extends SqlGenerator {
     public String prepareBatchInsertStatement(JdbcSchema schema, JqlEntitySet.InsertPolicy insertPolicy) {
         this.writeInsertHeader(schema, insertPolicy);
 
-        super.writePreparedInsertStatementValueSet(schema.getWritableColumns());
+        super.writePreparedInsertStatementValueSet((List)schema.getWritableColumns());
 
         switch (insertPolicy) {
             case UpdateOnConflict:
@@ -66,4 +69,22 @@ public class MySqlGenerator extends SqlGenerator {
         return sql;
     }
 
+    protected void writeJsonPath(EntityFilter node, QColumn column, JsType valueType) {
+        writeJsonPath(node);
+        sw.write(column.getJsonKey()).write('\'');
+    }
+
+    private void writeJsonPath(EntityFilter node) {
+        if (node.isJsonNode()) {
+            EntityFilter parent = node.getParentNode();
+            writeJsonPath(parent);
+            sw.write(node.getMappingAlias());
+            if (!parent.isJsonNode()) {
+                sw.write("->'$");
+            }
+        } else {
+            sw.write(node.getMappingAlias());
+        }
+        sw.write('.');
+    }
 }

@@ -225,13 +225,13 @@ public class JsonRowMapper implements ResultSetExtractor<List<Map>> {
     protected Object getColumnValue(ResultSet rs, int index, QColumn column) throws SQLException {
         Object value;
         if (column.isJsonNode()) {
-            try {
-                value = rs.getString(index);
-                if (value != null) {
+            value = rs.getString(index);
+            if (value != null) {
+                try {
                     value = objectMapper.readValue(value.toString(), JsonNode.class);
+                } catch (JsonProcessingException e) {
+                    // mariadb longtext 인 경우;
                 }
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
             }
         } else {
             value = JdbcUtils.getResultSetValue(rs, index);

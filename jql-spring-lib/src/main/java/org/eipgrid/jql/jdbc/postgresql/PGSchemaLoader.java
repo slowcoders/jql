@@ -25,7 +25,7 @@ public class PGSchemaLoader extends JdbcSchemaLoader {
     }
 
 
-    private Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
+    protected Map<String, String> getColumnComments(Connection conn, TablePath tablePath) throws SQLException {
         HashMap<String, String> comments = new HashMap<>();
         String sql = "SELECT c.column_name, pgd.description\n" +
                 "FROM information_schema.columns c\n" +
